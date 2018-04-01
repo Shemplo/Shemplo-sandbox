@@ -1,7 +1,8 @@
 /bin/
 /target/
+/test/
 
 .classpath
 .project
 .settings
-.class
+*.class

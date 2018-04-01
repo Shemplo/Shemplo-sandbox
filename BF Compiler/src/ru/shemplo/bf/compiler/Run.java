@@ -2,12 +2,17 @@ package ru.shemplo.bf.compiler;
 
 import static org.objectweb.asm.Opcodes.*;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.PrintStream;
+import java.io.Reader;
+import java.nio.charset.StandardCharsets;
 import java.util.Scanner;
 
 import org.objectweb.asm.ClassWriter;
@@ -30,7 +35,31 @@ public class Run {
 	private static int LINE = 0;
 	
 	public static void main (String... args) {
-		Compiler c = new Compiler ("+++[>+++.<-].");
+		if (args == null || args.length == 0) {
+			String message = "Nothing to compile";
+			throw new IllegalStateException (message);
+		}
+		
+		File srcFile = new File (args [0]);
+		String code = args [0];
+		if (srcFile.exists () && srcFile.isFile ()) {
+			try (
+				InputStream is = new FileInputStream (srcFile);
+				Reader r = new InputStreamReader (is, StandardCharsets.UTF_8);
+				BufferedReader br = new BufferedReader (r);
+			) {
+				StringBuilder sb = new StringBuilder ();
+				while ((code = br.readLine ()) != null) {
+					sb.append (code);
+				}
+				
+				code = sb.toString ();
+			} catch (IOException ioe) {
+				System.out.println ("Error occured: " + ioe.getMessage ());
+			}
+		}
+		
+		Compiler c = new Compiler (code);
 		int [] bounds = c.bounds ();
 		
 		cw = new ClassWriter (0);
