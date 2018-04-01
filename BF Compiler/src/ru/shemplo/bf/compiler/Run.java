@@ -43,6 +43,8 @@ public class Run {
 		File srcFile = new File (args [0]);
 		String code = args [0];
 		if (srcFile.exists () && srcFile.isFile ()) {
+			// If file with given path exists then source code
+			// will be read from this file
 			try (
 				InputStream is = new FileInputStream (srcFile);
 				Reader r = new InputStreamReader (is, StandardCharsets.UTF_8);
@@ -56,36 +58,63 @@ public class Run {
 				code = sb.toString ();
 			} catch (IOException ioe) {
 				System.out.println ("Error occured: " + ioe.getMessage ());
+				System.exit (1);
 			}
 		}
 		
+		/* Initializing compiler on given code */
 		Compiler c = new Compiler (code);
 		int [] bounds = c.bounds ();
 		
+		/* Creating class with name `Brainfuck` */
+		/* Equals: public class Brainfuck {} */
 		cw = new ClassWriter (0);
 		int CLASS_ACCESS = ACC_PUBLIC + ACC_SUPER;
 		cw.visit (V1_8, CLASS_ACCESS, NAME_CL, 
 					null, "java/lang/Object", null);
 		cw.visitSource (NAME_CL + ".java", null);
 		
+		/*
+		 * Declaring variables:
+		 * private static final Scanner S;
+		 * private static int [] tape;
+		 * private static int car;
+		 */
 		declareVaribles ();
-		int size = bounds [1] - bounds [0] + 1;
+		// TODO: this is a weak place because size can be undetermined
+		// (For example when carriage is moved in cycle [<] after a user input `,`)
+		int size = bounds [1] - bounds [0] + 1; // Size of tape (need to fix)
+		/*
+		 * Assign variables:
+		 * S = new Scanner (System.in, StandardCharsets.UTF_8)
+		 * tape = new int [size];
+		 * car = offset;
+		 */
 		declareStaticConstructor (size, -bounds [0]);
 		
 		MethodVisitor mv = null;
+		/*
+		 * Creating `main` method of class
+		 * Equals: public static void main (String... args) {}
+		 */
 		int MAIN_ACCESS = ACC_PUBLIC + ACC_STATIC + ACC_VARARGS;
 		mv = cw.visitMethod (MAIN_ACCESS, "main", "(" + NAME_STA + ")V", 
 								null, null);
 		mv.visitCode ();
 		
+		/* Add body of `main` method */
+		// This is a compilation of BF code
 		c.compile (mv);
 		
+		// Some meta information for method
 		mv.visitInsn (RETURN);
 		mv.visitMaxs (10, 1);
 		mv.visitEnd ();
 		
+		// Closing class for editing
 		cw.visitEnd ();
 		
+		// Creating a file to write class in
 		File outFile = new File (NAME_CL + ".class");
 		try (
 			OutputStream os = new FileOutputStream (outFile);
@@ -97,11 +126,18 @@ public class Run {
 		}
 	}
 	
+	/**
+	 * @param token Type-token of class that's name is required
+	 * @return Name of object in format package1/package2/.../ClassName
+	 */
 	private static String name (Class <?> token) {
 		if (token == null) { return "null"; }
 		return token.getName ().replace ('.', '/');
 	}
 	
+	/**
+	 * Declares necessary variables (Scanner + Array + Carriage)
+	 */
 	private static void declareVaribles () {
 		int FIELD_ACCESS = ACC_PRIVATE + ACC_STATIC;
 		FieldVisitor fv = null;
@@ -120,6 +156,11 @@ public class Run {
 		fv.visitEnd ();
 	}
 	
+	/**
+	 * @param tapeLength length of tape
+	 * @param offset start possition of carriage
+	 * 
+	 */
 	private static void 
 		declareStaticConstructor (int tapeLength, int offset) {
 		MethodVisitor mv = null;
@@ -285,6 +326,9 @@ public class Run {
 						parseCycle (mv);
 					} else if (sym == ']') {
 						return;
+					} else {
+						String message = "Unknown symbol `" + sym + "` at " + (car + 1);
+						throw new IllegalStateException (message);
 					}
 				}
 				
