@@ -4,13 +4,13 @@
 
 This compiler takes source code on *BF* and translate it into a *Java Byte Code*
 
-Build maven project:
+* Build maven project:
 
 ```
 mvn package
 ```
 
-Run a compiler:
+* Run a compiler:
 
 ```
 java -cp dependency-jars/*;bf.compiler-0.1.0.jar ru.shemplo.bf.compiler.Run [src]
@@ -18,9 +18,9 @@ java -cp dependency-jars/*;bf.compiler-0.1.0.jar ru.shemplo.bf.compiler.Run [src
 
 As `src` here can be path to the file (if file exists than it will be compiled) or raw *BF* code.
 
-The result will be placed near `bf.compiler-0.1.0.jar` in class `Brainfuck.class`.
+The result will be placed near `bf.compiler-*.jar` in class `Brainfuck.class`.
 
-Run a compiled code:
+* Run a compiled code:
 
 ```
 java Brainfuck
