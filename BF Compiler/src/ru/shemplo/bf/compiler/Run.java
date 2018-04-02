@@ -29,7 +29,9 @@ public class Run {
 								NAME_SC  = name (Scanner.class),
 								NAME_S   = name (String.class),
 								NAME_INS = name (InputStream.class),
-								NAME_STA = name (String [].class);
+								NAME_STA = name (String [].class),
+								NAME_I   = name (Integer.class),
+								NAME_OBJ = name (Object.class);
 	
 	private static ClassWriter cw;
 	private static int LINE = 0;
@@ -64,7 +66,6 @@ public class Run {
 		
 		/* Initializing compiler on given code */
 		Compiler c = new Compiler (code);
-		int [] bounds = c.bounds ();
 		
 		/* Creating class with name `Brainfuck` */
 		/* Equals: public class Brainfuck {} */
@@ -81,16 +82,14 @@ public class Run {
 		 * private static int car;
 		 */
 		declareVaribles ();
-		// TODO: this is a weak place because size can be undetermined
-		// (For example when carriage is moved in cycle [<] after a user input `,`)
-		int size = bounds [1] - bounds [0] + 1; // Size of tape (need to fix)
 		/*
 		 * Assign variables:
 		 * S = new Scanner (System.in, StandardCharsets.UTF_8)
 		 * tape = new int [size];
 		 * car = offset;
 		 */
-		declareStaticConstructor (size, -bounds [0]);
+		int size = 4; // Size of tape (by default)
+		declareStaticConstructor (size, size / 2);
 		
 		MethodVisitor mv = null;
 		/*
@@ -110,6 +109,10 @@ public class Run {
 		mv.visitInsn (RETURN);
 		mv.visitMaxs (10, 1);
 		mv.visitEnd ();
+		
+		// NEW
+		declareExpandMethod ();
+		declareMoveMethod ();
 		
 		// Closing class for editing
 		cw.visitEnd ();
@@ -203,14 +206,193 @@ public class Run {
 		mv.visitEnd ();
 	}
 	
-	public static void actionMoveCarriage (MethodVisitor mv, int offset) {
+	private static void declareExpandMethod () {
+		int ACC = ACC_PRIVATE + ACC_STATIC;
+		MethodVisitor mv = cw.visitMethod (ACC, "expand", "(I)V", 
+											null, null);
+		mv.visitParameter ("offset", 0);
+		mv.visitCode ();
+		
+		Label la = new Label ();
+		mv.visitLabel (la);
+		mv.visitLineNumber (LINE++, la);
+		mv.visitFieldInsn (GETSTATIC, NAME_CL, "tape", "[I");
+		mv.visitInsn (ARRAYLENGTH);
+		mv.visitFieldInsn (GETSTATIC, NAME_I, "MAX_VALUE", "I");
+		
+		Label lb = new Label ();
+		mv.visitJumpInsn (IF_ICMPNE, lb);
+		
+			Label lc = new Label ();
+			mv.visitLabel (lc);
+			mv.visitLineNumber (LINE++, lc);
+			mv.visitInsn (RETURN);
+		
+		mv.visitLabel (lb);
+		mv.visitLineNumber (LINE++, lb);
+		mv.visitFrame (F_SAME, 0, null, 0, null);
+		
 		Label l0 = new Label ();
 		mv.visitLabel (l0);
 		mv.visitLineNumber (LINE++, l0);
 		mv.visitFieldInsn (GETSTATIC, NAME_CL, "car", "I");
-		mv.visitIntInsn (BIPUSH, offset);
+		mv.visitVarInsn (ILOAD, 0);
 		mv.visitInsn (IADD);
+		mv.visitVarInsn (ISTORE, 1);
+		
+		Label l01 = new Label ();
+		mv.visitLabel (l01);
+		mv.visitLineNumber (LINE++, l01);
+		mv.visitFieldInsn (GETSTATIC, NAME_I, "MAX_VALUE", "I");
+		mv.visitVarInsn (ISTORE, 2);
+		
+		Label l1 = new Label ();
+		mv.visitLabel (l1);
+		mv.visitLineNumber (LINE++, l1);
+		mv.visitVarInsn (ILOAD, 1);
+		
+		Label l2 = new Label ();
+		mv.visitJumpInsn (IFLT, l2);
+		mv.visitVarInsn (ILOAD, 1);
+		mv.visitFieldInsn (GETSTATIC, NAME_CL, "tape", "[I");
+		mv.visitInsn (ARRAYLENGTH);
+		
+			Label l3 = new Label ();
+			mv.visitJumpInsn (IF_ICMPLT, l3);
+			
+			mv.visitLabel (l2);
+			mv.visitLineNumber (LINE++, l2);
+			mv.visitFrame (F_APPEND, 2, new Object [] {INTEGER, INTEGER}, 
+							0, null);
+			
+			Label l4 = new Label ();
+			mv.visitLabel (l4);
+			mv.visitLineNumber (LINE++, l4);
+			mv.visitFieldInsn (GETSTATIC, NAME_CL, "tape", "[I");
+			mv.visitInsn (ARRAYLENGTH);
+			mv.visitFieldInsn (GETSTATIC, NAME_I, "MAX_VALUE", "I");
+			mv.visitInsn (ICONST_2);
+			mv.visitInsn (IDIV);
+			
+			Label l5 = new Label ();
+			mv.visitJumpInsn (IF_ICMPGE, l5);
+			
+				Label l6 = new Label ();
+				mv.visitLabel (l6);
+				mv.visitLineNumber (LINE++, l6);
+				mv.visitFieldInsn (GETSTATIC, NAME_CL, "tape", "[I");
+				mv.visitInsn (ARRAYLENGTH);
+				mv.visitInsn (ICONST_2);
+				mv.visitInsn (IMUL);
+				mv.visitVarInsn (ISTORE, 2);
+				
+			mv.visitLabel (l5);
+			mv.visitLineNumber (LINE++, l5);
+			mv.visitFrame (F_SAME, 0, null, 0, null);
+			
+			mv.visitVarInsn (ILOAD, 2);
+			mv.visitIntInsn (NEWARRAY, T_INT);
+			mv.visitVarInsn (ASTORE, 4);
+			
+			Label l7 = new Label ();
+			mv.visitLabel (l7);
+			mv.visitLineNumber (LINE++, l7);
+			mv.visitFieldInsn (GETSTATIC, NAME_CL, "tape", "[I");
+			mv.visitInsn (ICONST_0);
+			mv.visitVarInsn (ALOAD, 4);
+			mv.visitVarInsn (ILOAD, 2);
+			mv.visitInsn (ICONST_4);
+			mv.visitInsn (IDIV);
+			mv.visitFieldInsn (GETSTATIC, NAME_CL, "tape", "[I");
+			mv.visitInsn (ARRAYLENGTH);
+			String type = "(L" + NAME_OBJ + ";IL" + NAME_OBJ + ";II)V";
+			mv.visitMethodInsn (INVOKESTATIC, NAME_SYS, "arraycopy", 
+								type, false);
+			
+			Label l8 = new Label ();
+			mv.visitLabel (l8);
+			mv.visitLineNumber (LINE++, l8);
+			mv.visitVarInsn (ALOAD, 4);
+			mv.visitFieldInsn (PUTSTATIC, NAME_CL, "tape", "[I");
+			
+			Label l9 = new Label ();
+			mv.visitLabel (l9);
+			mv.visitLineNumber (LINE++, l9);
+			mv.visitFieldInsn (GETSTATIC, NAME_CL, "car", "I");
+			mv.visitVarInsn (ILOAD, 2);
+			mv.visitInsn (ICONST_4);
+			mv.visitInsn (IDIV);
+			mv.visitInsn (IADD);
+			mv.visitFieldInsn (PUTSTATIC, NAME_CL, "car", "I");
+		
+		mv.visitLabel (l3);
+		mv.visitLineNumber (LINE++, l3);
+		mv.visitFrame (F_SAME, 0, null, 0, null);
+		
+		mv.visitInsn (RETURN);
+		mv.visitLocalVariable ("offset", "I", null, la, l7, 0);
+		mv.visitLocalVariable ("shift", "I", null, la, l7, 1);
+		mv.visitLocalVariable ("len", "I", null, la, l7, 2);
+		mv.visitMaxs (10, 5);
+		mv.visitEnd ();
+	}
+	
+	private static void declareMoveMethod () {
+		int ACC = ACC_PRIVATE + ACC_STATIC;
+		MethodVisitor mv = cw.visitMethod (ACC, "move", "(I)V", 
+											null, null);
+		mv.visitParameter ("offset", 0);
+		mv.visitCode ();
+		
+		Label l0 = new Label ();
+		mv.visitLabel (l0);
+		mv.visitLineNumber (LINE++, l0);
+		mv.visitFieldInsn (GETSTATIC, NAME_CL, "car", "I");
+		
+		Label l1 = new Label ();
+		mv.visitLabel (l1);
+		mv.visitLineNumber (LINE++, l1);
+		mv.visitFieldInsn (GETSTATIC, NAME_CL, "tape", "[I");
+		mv.visitInsn (ARRAYLENGTH);
+		
+		Label l2 = new Label ();
+		mv.visitLabel (l2);
+		mv.visitLineNumber (LINE++, l2);
+		mv.visitVarInsn (ILOAD, 0);
+		mv.visitMethodInsn (INVOKESTATIC, NAME_CL, "expand", 
+							"(I)V", false);
+		
+		Label l3 = new Label ();
+		mv.visitLabel (l3);
+		mv.visitLineNumber (LINE++, l3);
+		mv.visitFieldInsn (GETSTATIC, NAME_CL, "car", "I");
+		mv.visitInsn (I2L);
+		mv.visitFieldInsn (GETSTATIC, NAME_CL, "tape", "[I");
+		mv.visitInsn (ARRAYLENGTH);
+		mv.visitInsn (I2L);
+		mv.visitInsn (LADD);
+		mv.visitVarInsn (ILOAD, 0);
+		mv.visitInsn (I2L);
+		mv.visitInsn (LADD);
+		mv.visitFieldInsn (GETSTATIC, NAME_CL, "tape", "[I");
+		mv.visitInsn (ARRAYLENGTH);
+		mv.visitInsn (I2L);
+		mv.visitInsn (LREM);
+		mv.visitInsn (L2I);
 		mv.visitFieldInsn (PUTSTATIC, NAME_CL, "car", "I");
+		
+		mv.visitInsn (RETURN);
+		mv.visitLocalVariable ("offset", "I", null, l0, l3, 0);
+		mv.visitMaxs (10, 1);
+		mv.visitEnd ();
+	}
+	
+	public static void actionMoveCarriage (MethodVisitor mv, int offset) {
+		Label l0 = new Label ();
+		mv.visitLabel (l0);
+		mv.visitLineNumber (LINE++, l0);
+		mv.visitIntInsn (BIPUSH, offset);
+		mv.visitMethodInsn (INVOKESTATIC, NAME_CL, "move", "(I)V", false);
 	}
 	
 	public static void actionChangeValue (MethodVisitor mv, int delta) {
@@ -280,44 +462,40 @@ public class Run {
 			this.CODE = compressedString.toString ();
 		}
 		
-		public int [] bounds () {
-			int [] bounds = {0, 0};
-			for (int i = 0, balance = 0; i < CODE.length (); i++) {
-				if (CODE.charAt (i) == '>') {
-					balance++;
-				} else if (CODE.charAt (i) == '<') {
-					balance--;
-				}
-				
-				bounds [0] = Math.min (bounds [0], balance);
-				bounds [1] = Math.max (bounds [1], balance);
-			}
-			
-			return bounds;
-		}
-		
 		public void compile (MethodVisitor mv) {
 			parseExpression (mv);
 		}
 		
 		private void parseExpression (MethodVisitor mv) {
-			int collector = 0;
+			int valueCollector = 0,
+				moveCollector = 0;
 			
 			while (car < CODE.length ()) {
 				char sym = CODE.charAt (car);
 				if (sym == '+' || sym == '-') {
-					collector += sym == '+' ? 1 : -1;
+					valueCollector += sym == '+' ? 1 : -1;
+					if (Math.abs (moveCollector) > 0) {
+						actionMoveCarriage (mv, moveCollector);
+						moveCollector = 0;
+					}
+				} else if (sym == '>' || sym == '<') {
+					moveCollector += sym == '>' ? 1 : -1;
+					if (Math.abs (valueCollector) > 0) {
+						actionChangeValue (mv, valueCollector);
+						valueCollector = 0;
+					}
 				} else {
-					if (Math.abs (collector) > 0) {
-						actionChangeValue (mv, collector);
-						collector = 0;
+					if (Math.abs (valueCollector) > 0) {
+						actionChangeValue (mv, valueCollector);
+						valueCollector = 0;
 					}
 					
-					if (sym == '>') {
-						actionMoveCarriage (mv, 1);
-					} else if (sym == '<') {
-						actionMoveCarriage (mv, -1);
-					} else if (sym == '.') {
+					if (Math.abs (moveCollector) > 0) {
+						actionMoveCarriage (mv, moveCollector);
+						moveCollector = 0;
+					}
+					
+					if (sym == '.') {
 						actionPrintValue (mv);
 					} else if (sym == ',') {
 						actionReadValue (mv);
