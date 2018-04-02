@@ -110,8 +110,12 @@ public class Run {
 		mv.visitMaxs (10, 1);
 		mv.visitEnd ();
 		
-		// NEW
+		// Support method that will expand array of tape
+		// when it's necessary and possible
 		declareExpandMethod ();
+		
+		// Special wrapper that will make expand
+		// before moving carriage
 		declareMoveMethod ();
 		
 		// Closing class for editing
@@ -220,18 +224,24 @@ public class Run {
 		mv.visitInsn (ARRAYLENGTH);
 		mv.visitFieldInsn (GETSTATIC, NAME_I, "MAX_VALUE", "I");
 		
+		// In case of max capacity of tape no reasons to continue
+		// if (tape.length == Integer.MAX_VALUE)
 		Label lb = new Label ();
 		mv.visitJumpInsn (IF_ICMPNE, lb);
 		
+			// return;
 			Label lc = new Label ();
 			mv.visitLabel (lc);
 			mv.visitLineNumber (LINE++, lc);
 			mv.visitInsn (RETURN);
 		
+		// Exit from `if`
 		mv.visitLabel (lb);
 		mv.visitLineNumber (LINE++, lb);
 		mv.visitFrame (F_SAME, 0, null, 0, null);
 		
+		// Evaluating expected position of carriage
+		// int shift = car + offset;
 		Label l0 = new Label ();
 		mv.visitLabel (l0);
 		mv.visitLineNumber (LINE++, l0);
@@ -240,6 +250,8 @@ public class Run {
 		mv.visitInsn (IADD);
 		mv.visitVarInsn (ISTORE, 1);
 		
+		// Storing default size of new array
+		// int len = Integer.MAX_VALUE;
 		Label l01 = new Label ();
 		mv.visitLabel (l01);
 		mv.visitLineNumber (LINE++, l01);
@@ -251,12 +263,16 @@ public class Run {
 		mv.visitLineNumber (LINE++, l1);
 		mv.visitVarInsn (ILOAD, 1);
 		
+		// Check that expand is necessary
+		// if (shift < 0)
 		Label l2 = new Label ();
 		mv.visitJumpInsn (IFLT, l2);
 		mv.visitVarInsn (ILOAD, 1);
 		mv.visitFieldInsn (GETSTATIC, NAME_CL, "tape", "[I");
 		mv.visitInsn (ARRAYLENGTH);
 		
+			// Check that expand is necessary
+			// if (shift >= tape.length)
 			Label l3 = new Label ();
 			mv.visitJumpInsn (IF_ICMPLT, l3);
 			
@@ -274,9 +290,13 @@ public class Run {
 			mv.visitInsn (ICONST_2);
 			mv.visitInsn (IDIV);
 			
+			// Check that we can increase in 2 times
+			// if (tape.length < Integer.MAX_VALUE / 2)
 			Label l5 = new Label ();
 			mv.visitJumpInsn (IF_ICMPGE, l5);
 			
+				// Evaluating new size of tape
+				// len = tape.length * 2;
 				Label l6 = new Label ();
 				mv.visitLabel (l6);
 				mv.visitLineNumber (LINE++, l6);
@@ -286,14 +306,20 @@ public class Run {
 				mv.visitInsn (IMUL);
 				mv.visitVarInsn (ISTORE, 2);
 				
+			// Exit from `if`
 			mv.visitLabel (l5);
 			mv.visitLineNumber (LINE++, l5);
 			mv.visitFrame (F_SAME, 0, null, 0, null);
 			
+			// Creating temporary array for tape
+			// int[] arrayOfInt = new int[len];
 			mv.visitVarInsn (ILOAD, 2);
 			mv.visitIntInsn (NEWARRAY, T_INT);
 			mv.visitVarInsn (ASTORE, 4);
 			
+			// Copying existing array to new corpus with 1 quarter offset
+			// (in this situation existing array will be placed in center)
+			// System.arraycopy(tape, 0, arrayOfInt, len / 4, tape.length);
 			Label l7 = new Label ();
 			mv.visitLabel (l7);
 			mv.visitLineNumber (LINE++, l7);
@@ -309,12 +335,17 @@ public class Run {
 			mv.visitMethodInsn (INVOKESTATIC, NAME_SYS, "arraycopy", 
 								type, false);
 			
+			// Assign temporary array as array of tape
+			// tape = arrayOfInt;
 			Label l8 = new Label ();
 			mv.visitLabel (l8);
 			mv.visitLineNumber (LINE++, l8);
 			mv.visitVarInsn (ALOAD, 4);
 			mv.visitFieldInsn (PUTSTATIC, NAME_CL, "tape", "[I");
 			
+			// Moving carriage on 1 quarter due to centering
+			// of existing array in new one
+			// car += len / 4;
 			Label l9 = new Label ();
 			mv.visitLabel (l9);
 			mv.visitLineNumber (LINE++, l9);
@@ -325,6 +356,7 @@ public class Run {
 			mv.visitInsn (IADD);
 			mv.visitFieldInsn (PUTSTATIC, NAME_CL, "car", "I");
 		
+		// Exit from `if`
 		mv.visitLabel (l3);
 		mv.visitLineNumber (LINE++, l3);
 		mv.visitFrame (F_SAME, 0, null, 0, null);
@@ -344,27 +376,20 @@ public class Run {
 		mv.visitParameter ("offset", 0);
 		mv.visitCode ();
 		
+		// Ensuring capacity of tape
+		// expand(offset);
 		Label l0 = new Label ();
 		mv.visitLabel (l0);
 		mv.visitLineNumber (LINE++, l0);
-		mv.visitFieldInsn (GETSTATIC, NAME_CL, "car", "I");
-		
-		Label l1 = new Label ();
-		mv.visitLabel (l1);
-		mv.visitLineNumber (LINE++, l1);
-		mv.visitFieldInsn (GETSTATIC, NAME_CL, "tape", "[I");
-		mv.visitInsn (ARRAYLENGTH);
-		
-		Label l2 = new Label ();
-		mv.visitLabel (l2);
-		mv.visitLineNumber (LINE++, l2);
 		mv.visitVarInsn (ILOAD, 0);
 		mv.visitMethodInsn (INVOKESTATIC, NAME_CL, "expand", 
 							"(I)V", false);
 		
-		Label l3 = new Label ();
-		mv.visitLabel (l3);
-		mv.visitLineNumber (LINE++, l3);
+		// Moving carriage by given offset
+		// car = (int)((car + tape.length + offset) % tape.length);
+		Label l1 = new Label ();
+		mv.visitLabel (l1);
+		mv.visitLineNumber (LINE++, l1);
 		mv.visitFieldInsn (GETSTATIC, NAME_CL, "car", "I");
 		mv.visitInsn (I2L);
 		mv.visitFieldInsn (GETSTATIC, NAME_CL, "tape", "[I");
@@ -382,7 +407,7 @@ public class Run {
 		mv.visitFieldInsn (PUTSTATIC, NAME_CL, "car", "I");
 		
 		mv.visitInsn (RETURN);
-		mv.visitLocalVariable ("offset", "I", null, l0, l3, 0);
+		mv.visitLocalVariable ("offset", "I", null, l0, l1, 0);
 		mv.visitMaxs (10, 1);
 		mv.visitEnd ();
 	}

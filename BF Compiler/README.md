@@ -27,11 +27,11 @@ java Brainfuck
 ```
 #### Specification
 
-The tape after compilation is almost *ENDLESS*: the exact length of tape is
+The tape after compilation is almost **ENDLESS**: the exact length of tape is
 `Integer.MAX_VALUE` but it is looped. That means that after reaching of
 the end of the tape, carriage will be moved to another end 
-(*Due to this application will never fall down with an IndexOutOfBoundsException,
-<u>but data in cell can be override</u>*).
+(Due to this application will never fall down with an <b>IndexOutOfBoundsException</b>,
+<ins>but data in cell can be override</ins>).
 
 ### About brainfuck language
 
