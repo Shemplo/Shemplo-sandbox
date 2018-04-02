@@ -456,6 +456,20 @@ public class Run {
 							"(I)V", false);
 	}
 	
+	public static void actionPrintCharValue (MethodVisitor mv) {
+		Label l0 = new Label ();
+		mv.visitLabel (l0);
+		mv.visitLineNumber (LINE++, l0);
+		mv.visitFieldInsn (GETSTATIC, NAME_SYS, "out", 
+							"L" + NAME_PRS + ";");
+		mv.visitFieldInsn (GETSTATIC, NAME_CL, "tape", "[I");
+		mv.visitFieldInsn (GETSTATIC, NAME_CL, "car", "I");
+		mv.visitInsn (IALOAD);
+		mv.visitInsn (I2C);
+		mv.visitMethodInsn (INVOKEVIRTUAL, NAME_PRS, "print", 
+							"(C)V", false);
+	}
+	
 	public static void actionReadValue (MethodVisitor mv) {
 		Label l0 = new Label ();
 		mv.visitLabel (l0);
@@ -522,6 +536,8 @@ public class Run {
 					
 					if (sym == '.') {
 						actionPrintValue (mv);
+					} else if (sym == ':') {
+						actionPrintCharValue (mv);
 					} else if (sym == ',') {
 						actionReadValue (mv);
 					} else if (sym == '[') {

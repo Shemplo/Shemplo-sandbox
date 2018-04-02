@@ -59,6 +59,9 @@ OFFSET:   ...-1  0  1  2   3  4 ... | >>>> | ...-1  0  1  2 ...
 * `[` - start new cycle
 * `]` - close cycle body
 
+#### Extra
+* `:` - print cell value as a character
+
 An example *how to print a number 72*:
 
 ```
@@ -97,3 +100,18 @@ An example *how to print a number 72*:
 ```
 
 See more about BF on [wiki](https://en.wikipedia.org/wiki/Brainfuck)
+
+### Verification
+
+For check that it works you can put such code in `src.bf` file and then compile it
+
+```brainfuck
+>++++++++++>+>+[
+    [+++++[>++++++++<-]>:<++++++[>--------<-]+<<<]>:>>[
+        [-]<[>+<-]>>[<<+>+>-]<[>+<-[>+<-[>+<-[>+<-[>+<-[>+<-
+            [>+<-[>+<-[>+<-[>[-]>+>+<<<-[>+<-]]]]]]]]]]]+>>>
+    ]<<<
+]
+```
+
+Where `:` sign means print cell value as a character (custom instruction)
