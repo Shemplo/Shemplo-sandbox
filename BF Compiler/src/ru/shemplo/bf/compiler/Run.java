@@ -55,6 +55,7 @@ public class Run {
 				StringBuilder sb = new StringBuilder ();
 				while ((code = br.readLine ()) != null) {
 					sb.append (code);
+					sb.append ('\n');
 				}
 				
 				code = sb.toString ();
@@ -495,9 +496,26 @@ public class Run {
 			}
 			
 			StringBuilder compressedString = new StringBuilder ();
-			code.chars ()
-				.filter (c -> !Character.isWhitespace (c))
-				.forEach (c -> compressedString.append ((char) c));
+			boolean isComment = false;
+			
+			for (int i = 0; i < code.length (); i++) {
+				char sym = code.charAt (i);
+				isComment = isComment
+								? sym == '\n' 
+									? false 
+									: isComment
+								: sym == '#'  
+									? true
+									: isComment;
+				
+				if (isComment) { continue; }
+				compressedString.append (sym);
+			}
+			
+			code = compressedString.toString ();
+			compressedString.setLength (0);
+			code.chars ().filter (c -> !Character.isWhitespace (c))
+				.forEachOrdered (c -> compressedString.append ((char) c));
 			this.CODE = compressedString.toString ();
 		}
 		

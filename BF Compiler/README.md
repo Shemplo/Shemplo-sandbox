@@ -61,6 +61,7 @@ OFFSET:   ...-1  0  1  2   3  4 ... | >>>> | ...-1  0  1  2 ...
 
 #### Extra
 * `:` - print cell value as a character
+* `#` - one-line comment (till the end of line `\n`)
 
 An example *how to print a number 72*:
 
@@ -106,6 +107,8 @@ See more about BF on [wiki](https://en.wikipedia.org/wiki/Brainfuck)
 For check that it works you can put such code in `src.bf` file and then compile it
 
 ```brainfuck
+# This is a one-line comment
+# Compute Fibonacci number
 >++++++++++>+>+[
     [+++++[>++++++++<-]>:<++++++[>--------<-]+<<<]>:>>[
         [-]<[>+<-]>>[<<+>+>-]<[>+<-[>+<-[>+<-[>+<-[>+<-[>+<-
@@ -113,5 +116,7 @@ For check that it works you can put such code in `src.bf` file and then compile 
     ]<<<
 ]
 ```
+
+This code computes Fibonacci number
 
 Where `:` sign means print cell value as a character (custom instruction)
