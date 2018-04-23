@@ -1,0 +1,7 @@
+/bin/
+/target/
+*matrix*.txt
+
+.classpath
+.project
+.settings/
