@@ -7,4 +7,4 @@ This one is for mapping two sets of data with known attitude coefficients.
 
 #### Example: 
 
-![heatmap.jpg](example)
+![example](heatmap.jpg)
