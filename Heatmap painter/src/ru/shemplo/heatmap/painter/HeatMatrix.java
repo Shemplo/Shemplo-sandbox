@@ -1,14 +1,18 @@
-package ru.shemplo.heatmap.reader;
+package ru.shemplo.heatmap.painter;
 
 import java.awt.Color;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
+import java.util.Set;
 
-import ru.shemplo.heatmap.painter.GradientColor;
+import ru.shemplo.heatmap.reader.MatrixProvider;
 import ru.shemplo.heatmap.util.Pair;
+import ru.shemplo.heatmap.util.Trip;
 
 public class HeatMatrix implements MatrixProvider {
 
@@ -17,8 +21,11 @@ public class HeatMatrix implements MatrixProvider {
 	private static final String 
 		PRINT_FORMAT = " %-1." + PRECISION + "f ";
 	
+	@SuppressWarnings ("unused")
 	private static final Comparator <Pair <Double, Integer>> 
-		COMPARE_PAIR = (a, b) -> (int) (Math.signum (b.f - a.f));
+		COMPARE_PAIR = (a, b) -> (int) Math.signum (b.f - a.f);
+	private static final Comparator <Trip <Double, ?, ?>> 
+		COMPARE_TRIP = (a, b) -> (int) Math.signum (b.f - a.f);
 	
 	private int height = 0, width = 0;
 	private double norma = 0;
@@ -33,6 +40,10 @@ public class HeatMatrix implements MatrixProvider {
 	public HeatMatrix (MatrixProvider provider) {
 		this (provider.getMatrix (), provider.getColumnNames (), 
 				provider.getRowNames ());
+	}
+	
+	public HeatMatrix (double [][] matrix) {
+		this (matrix, null, null);
 	}
 	
 	public HeatMatrix (double [][] matrix, List <String> cnames, List <String> rnames) {
@@ -52,8 +63,24 @@ public class HeatMatrix implements MatrixProvider {
 		}
 		
 		this.matrix = normalize (getOriginal (), norma);
-		this.ORIGINAL_CNAMES = Collections.unmodifiableList (cnames);
-		this.ORIGINAL_RNAMES = Collections.unmodifiableList (rnames);
+		if (!Objects.isNull (cnames)) {
+			this.ORIGINAL_CNAMES = Collections.unmodifiableList (cnames);
+		} else {
+			this.ORIGINAL_CNAMES = new ArrayList <> ();
+			for (int i = 0; i < width; i++) {
+				ORIGINAL_CNAMES.add ("" + i);
+			}
+		}
+		
+		if (!Objects.isNull (rnames)) {
+			this.ORIGINAL_RNAMES = Collections.unmodifiableList (rnames);
+		} else {
+			this.ORIGINAL_RNAMES = new ArrayList <> ();
+			for (int i = 0; i < width; i++) {
+				ORIGINAL_RNAMES.add ("" + i);
+			}
+		}
+
 		this.cnames = ORIGINAL_CNAMES;
 		this.rnames = ORIGINAL_RNAMES;
 	}
@@ -92,94 +119,56 @@ public class HeatMatrix implements MatrixProvider {
 			throw new IllegalStateException (message);
 		}
 		
-		List <Pair <Double, Integer>> 
-			columns = new ArrayList <> (),
-			rows = new ArrayList <> ();
+		List <Trip <Double, Integer, Integer>> 
+			values = new ArrayList <> ();
 		
 		for (int i = 0; i < height; i++) {
-			double maxValue = 0;
 			for (int j = 0; j < width; j++) {
-				maxValue = Math.max (maxValue, matrix [i][j]);
+				values.add (Trip.mt (matrix [i][j], i, j));
 			}
-			
-			rows.add (Pair.mp (maxValue, i));
 		}
 		
-		for (int i = 0; i < width; i++) {
-			double maxValue = 0;
-			for (int j = 0; j < height; j++) {
-				maxValue = Math.max (maxValue, matrix [j][i]);
+		values.sort (COMPARE_TRIP);
+		Set <Integer> columns = new HashSet <> (),
+						rows = new HashSet <> ();
+		List <Integer> columnsOrder = new ArrayList <> (),
+						rowsOrder = new ArrayList <> ();
+		
+		for (Trip <Double, Integer, Integer> trip : values) {
+			int row = trip.s, col = trip.t;
+			if (!columns.contains (col) 
+				&& !rows.contains (row)) {
+				columnsOrder.add (col);
+				rowsOrder.add (row);
+				
+				columns.add (col);
+				rows.add (row);
 			}
 			
-			columns.add (Pair.mp (maxValue, i));
-		}
-		
-		columns.sort (COMPARE_PAIR);
-		rows.sort (COMPARE_PAIR);
-		
-		List <Pair <Double, Integer>> same = new ArrayList <> ();
-		Pair <Double, Integer> prev = rows.get (0);
-		
-		for (int i = 1; i < height; i++) {
-			Pair <Double, Integer> cur = rows.get (i);
-			if (prev.f.compareTo (cur.f) == 0) {
-				if (same.size () == 0) {
-					same.add (prev);
-				}
-				
-				same.add (cur);
-			} else if (same.size () > 0 
-						|| i == width - 1) {
-				List <Pair <Integer, Integer>> 
-					inds = new ArrayList <> ();
-				
-				for (int j = 0; j < same.size (); j++) {
-					int row = same.get (j).s;
-					
-					double max = 0;
-					int index = -1;
-					for (int k = 0; k < width; k++) {
-						int column = columns.get (k).s;
-						if (max < matrix [row][column]) {
-							max = matrix [row][column];
-							index = k;
-						}
-					}
-					
-					inds.add (Pair.mp (j, index));
-				}
-				
-				inds.sort ((a, b) -> (int) Math.signum (a.s - b.s));
-				for (int j = 0; j < inds.size (); j++) {
-					rows.set (i - same.size () + j, same.get (inds.get (j).f));
-				}
-				
-				// TODO: not optimal but not resolved
-				//i += same.size () - 1;
-				same.clear ();
+			if (columns.size () == matrix.length
+				&& rows.size () == matrix.length) {
+				break;
 			}
-			
-			prev = cur;
 		}
 		
 		double [][] tmp = new double [height][width];
 		for (int i = 0; i < height; i++) {
-			int row = rows.get (i).s;
+			int row = rowsOrder.get (i);
 			for (int j = 0; j < width; j++) {
-				int column = columns.get (j).s;
-				tmp [i][j] = this.matrix [row][column];
+				int col = columnsOrder.get (j);
+				tmp [i][j] = this.matrix [row][col];
 			}
 		}
 		
 		List <String> tnames = new ArrayList <> ();
 		for (int i = 0; i < height; i++) {
-			tnames.add (rnames.get (rows.get (i).s));
+			tnames.add (rnames.get (rowsOrder.get (i)));
 		}
 		rnames = tnames;
 		
 		tnames = new ArrayList <> ();
 		for (int i = 0; i < width; i++) {
-			tnames.add (cnames.get (columns.get (i).s));
+			tnames.add (cnames.get (columnsOrder.get (i)));
 		}
 		cnames = tnames;
 		
@@ -198,7 +187,14 @@ public class HeatMatrix implements MatrixProvider {
 	}
 	
 	public double [][] getMatrix () {
-		return this.matrix.clone ();
+		double [][] tmp = new double [height][width];
+		for (int i = 0; i < height; i++) {
+			for (int j = 0; j < width; j++) {
+				tmp [i][j] = norma * matrix [i][j];
+			}
+		}
+		
+		return tmp;
 	}
 	
 	public Color [][] getColorMatrix (GradientColor gc) {

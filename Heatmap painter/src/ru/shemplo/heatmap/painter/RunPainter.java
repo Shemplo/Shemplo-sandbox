@@ -12,7 +12,6 @@ import java.util.function.Supplier;
 import javax.imageio.ImageIO;
 
 import ru.shemplo.heatmap.reader.FileMatrixProvider;
-import ru.shemplo.heatmap.reader.HeatMatrix;
 import ru.shemplo.heatmap.reader.MatrixProvider;
 
 public class RunPainter {
@@ -25,7 +24,7 @@ public class RunPainter {
 	private static final int TILE_SIZE = 36;
 	
 	public static void main (String... args) throws Exception {
-		MatrixProvider mp = new FileMatrixProvider ("matrix.txt");
+		MatrixProvider mp = new FileMatrixProvider ("50vs50_matrix_50.txt");
 		
 		double [][] m = new double [10][10];
 		for (int i = 0; i < m.length; i++) {
@@ -79,7 +78,7 @@ public class RunPainter {
 				
 				if (original [i][j] > 0) {
 					g.setColor (Color.BLACK);
-					g.drawString (String.format ("%.3f", original [i][j]), 
+					g.drawString (String.format ("%3.0f", original [i][j]), 
 												hOff + 2 + j * ts, y);
 				}
 			}
