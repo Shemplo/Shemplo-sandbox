@@ -1,9 +1,12 @@
-# Heatmap painer
+# Heatmap painter
 
-> **Heatmap** - table that has all cell painted to some gradient color depending on value in such cell
+> **Heatmap** - table that has all cells painted to some gradient color depending on value in such cell
 
 There are several kinds of these maps for different purposes. 
-This one is for mapping two sets of data with known attitude coefficients.
+This one is for mapping two sets of sets of data with known attitude coefficients.
+
+Due to numbers can be placed in undefined order, the visual analysis can be complicated.
+So this heatmap painter solves such problem by sorting data to diagonal representation.
 
 #### Example: 
 
