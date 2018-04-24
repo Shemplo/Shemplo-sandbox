@@ -48,7 +48,7 @@ public class FileMatrixProvider implements MatrixProvider {
 			BufferedReader br = new BufferedReader (r);
 		) {
 			String line = br.readLine ().trim ();
-			String [] names = line.split ("\\s");
+			String [] names = line.split ("\\s+");
 			cnames = Arrays.asList (names);
 			
 			while ((line = br.readLine ()) != null) {

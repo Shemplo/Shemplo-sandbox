@@ -25,7 +25,7 @@ public class RunPainter {
 	private static final int TILE_SIZE = 36;
 	
 	public static void main (String... args) throws Exception {
-		MatrixProvider mp = new FileMatrixProvider ("50vs50_matrix_50.txt");
+		MatrixProvider mp = new FileMatrixProvider ("matrix.txt");
 		
 		double [][] m = new double [10][10];
 		for (int i = 0; i < m.length; i++) {
@@ -61,10 +61,10 @@ public class RunPainter {
 		int ts = TILE_SIZE;
 		
 		g.setColor (Color.BLACK);
-		g.rotate (Math.PI / 2);
+		g.rotate (-Math.PI / 2);
 		for (int i = 0; i < original.length; i++) {
-			int y =  4 - hOff - ts / 2 - i * ts;
-			g.drawString (cnames.get (i), 6, y);
+			int y =  hOff + 4 + ts / 2 + i * ts;
+			g.drawString (cnames.get (i), 4 - vOff, y);
 		}
 		
 		g.setTransform (at);
