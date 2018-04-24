@@ -11,6 +11,7 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.StringTokenizer;
 
@@ -18,6 +19,7 @@ public class FileMatrixProvider implements MatrixProvider {
 
 	private final File FILE;
 	
+	private List <String> cnames, rnames;
 	private double [][] matrix; 
 	
 	public FileMatrixProvider (String path) {
@@ -37,6 +39,7 @@ public class FileMatrixProvider implements MatrixProvider {
 	
 	private double [][] readMatrix () {
 		List <List <Double>> dinamicMatrix = new ArrayList <> ();
+		rnames = new ArrayList <> ();
 		int width = 0;
 		
 		try (
@@ -44,8 +47,10 @@ public class FileMatrixProvider implements MatrixProvider {
 			Reader r = new InputStreamReader (is, StandardCharsets.UTF_8);
 			BufferedReader br = new BufferedReader (r);
 		) {
-			String line;
-			br.readLine (); // Skipping first line
+			String line = br.readLine ().trim ();
+			String [] names = line.split ("\\s");
+			cnames = Arrays.asList (names);
+			
 			while ((line = br.readLine ()) != null) {
 				line = line.trim ();
 				if (line.length () == 0) {
@@ -57,8 +62,8 @@ public class FileMatrixProvider implements MatrixProvider {
 				
 				StringTokenizer st = new StringTokenizer (line);
 				if (st.hasMoreTokens ()) {
-					// Skipping topic declaration
-					st.nextToken ();
+					String name = st.nextToken ();
+					rnames.add (name);
 				}
 				
 				while (st.hasMoreTokens ()) {
@@ -90,6 +95,16 @@ public class FileMatrixProvider implements MatrixProvider {
 	@Override
 	public double [][] getMatrix () {
 		return this.matrix;
+	}
+
+	@Override
+	public List <String> getColumnNames () {
+		return cnames;
+	}
+
+	@Override
+	public List <String> getRowNames () {
+		return rnames;
 	}
 
 }

@@ -2,17 +2,15 @@ package ru.shemplo.heatmap.reader;
 
 import java.awt.Color;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
-import java.util.Set;
 
 import ru.shemplo.heatmap.painter.GradientColor;
-import ru.shemplo.heatmap.util.IntMajorValue;
 import ru.shemplo.heatmap.util.Pair;
 
-public class HeatMatrix {
+public class HeatMatrix implements MatrixProvider {
 
 	public static final int PRECISION = 3;
 	
@@ -20,19 +18,24 @@ public class HeatMatrix {
 		PRINT_FORMAT = " %-1." + PRECISION + "f ";
 	
 	private static final Comparator <Pair <Double, Integer>> 
-		COMPARE_PAIR = (a, b) -> (int) Math.signum (b.f - a.f);
+		COMPARE_PAIR = (a, b) -> (int) (Math.signum (b.f - a.f));
 	
 	private int height = 0, width = 0;
 	private double norma = 0;
 	
+	private final List <String> ORIGINAL_CNAMES, 
+								ORIGINAL_RNAMES;
 	private final double [][] ORIGINAL;
+	
+	private List <String> cnames, rnames;
 	private double [][] matrix;
 	
 	public HeatMatrix (MatrixProvider provider) {
-		this (provider.getMatrix ());
+		this (provider.getMatrix (), provider.getColumnNames (), 
+				provider.getRowNames ());
 	}
 	
-	public HeatMatrix (double [][] matrix) {
+	public HeatMatrix (double [][] matrix, List <String> cnames, List <String> rnames) {
 		this.width = 0;
 		this.height = matrix.length;
 		for (int i = 0; i < matrix.length; i++) {
@@ -49,6 +52,10 @@ public class HeatMatrix {
 		}
 		
 		this.matrix = normalize (getOriginal (), norma);
+		this.ORIGINAL_CNAMES = Collections.unmodifiableList (cnames);
+		this.ORIGINAL_RNAMES = Collections.unmodifiableList (rnames);
+		this.cnames = ORIGINAL_CNAMES;
+		this.rnames = ORIGINAL_RNAMES;
 	}
 	
 	public String toString () {
@@ -73,6 +80,8 @@ public class HeatMatrix {
 	}
 	
 	public HeatMatrix reset () {
+		this.cnames = new ArrayList <> (ORIGINAL_CNAMES);
+		this.rnames = new ArrayList <> (ORIGINAL_RNAMES);
 		this.matrix = normalize (getOriginal (), norma);
 		return this;
 	}
@@ -108,8 +117,50 @@ public class HeatMatrix {
 		columns.sort (COMPARE_PAIR);
 		rows.sort (COMPARE_PAIR);
 		
-		System.out.println (columns);
-		System.out.println (rows);
+		List <Pair <Double, Integer>> same = new ArrayList <> ();
+		Pair <Double, Integer> prev = rows.get (0);
+		
+		for (int i = 1; i < height; i++) {
+			Pair <Double, Integer> cur = rows.get (i);
+			if (prev.f.compareTo (cur.f) == 0) {
+				if (same.size () == 0) {
+					same.add (prev);
+				}
+				
+				same.add (cur);
+			} else if (same.size () > 0 
+						|| i == width - 1) {
+				List <Pair <Integer, Integer>> 
+					inds = new ArrayList <> ();
+				
+				for (int j = 0; j < same.size (); j++) {
+					int row = same.get (j).s;
+					
+					double max = 0;
+					int index = -1;
+					for (int k = 0; k < width; k++) {
+						int column = columns.get (k).s;
+						if (max < matrix [row][column]) {
+							max = matrix [row][column];
+							index = k;
+						}
+					}
+					
+					inds.add (Pair.mp (j, index));
+				}
+				
+				inds.sort ((a, b) -> (int) Math.signum (a.s - b.s));
+				for (int j = 0; j < inds.size (); j++) {
+					rows.set (i - same.size () + j, same.get (inds.get (j).f));
+				}
+				
+				// TODO: not optimal but not resolved
+				//i += same.size () - 1;
+				same.clear ();
+			}
+			
+			prev = cur;
+		}
 		
 		double [][] tmp = new double [height][width];
 		for (int i = 0; i < height; i++) {
@@ -120,156 +171,20 @@ public class HeatMatrix {
 			}
 		}
 		
-		this.matrix = tmp;
-		
-		return this;
-	}
-	
-	public HeatMatrix diagonalize (int a) {
-		if (height != width) {
-			String message = "Given matrix is not squared";
-			throw new IllegalStateException (message);
-		}
-		
-		List <IntMajorValue> majors = new ArrayList <> ();
-		List <Integer> order = new ArrayList <> ();
-		for (int i = 0; i < width; i++) {
-			majors.add (new IntMajorValue ());
-			order.add (-1);
-		}
-		
-		Set <Integer> used = new HashSet <> ();
-		List <Pair <Double, Integer>> line;
-		
+		List <String> tnames = new ArrayList <> ();
 		for (int i = 0; i < height; i++) {
-			line = new ArrayList <> ();
-			for (int j = 0; j < width; j++) {
-				line.add (Pair.mp (matrix [i][j], j));
-			}
-			
-			line.sort (COMPARE_PAIR);
-			
-			//line = makePolarList (line, COMPARE_PAIR, i);
-			//System.out.println (line);
-			//System.out.println ();
-			
-			/*
-			for (int j = 0; j < width; j++) {
-				majors.get (j).addKey (line.get (j).s);
-			}
-			*/
-			
-			/*
-			 * THIS WORKS DON'T TOUCH
-			 */ 
-			for (int j = 0; j < width; j++) {
-				int column = line.get (j).s;
-				if (!used.contains (column)) {
-					order.set (i, column);
-					used.add (column);
-					break;
-				}
-			}
+			tnames.add (rnames.get (rows.get (i).s));
 		}
+		rnames = tnames;
 		
-		/*
-		int iter = 0;
-		while (iter < height) {
-			for (int i = 0; i < width; i++) {
-				if (order.get (i) != -1) { continue; }
-				
-				IntMajorValue imv = majors.get (i);
-				List <Integer> major = imv.getMajor ();
-				major = major.stream ()
-							 .filter (v -> !used.contains (v))
-							 .collect (Collectors.toList ());
-				
-				if (major.size () == 1) {
-					int value = major.get (0);
-					order.set (i, value);
-					used.add (value);
-				}
-			}
-			
-			iter++;
-		}
-		
+		tnames = new ArrayList <> ();
 		for (int i = 0; i < width; i++) {
-			if (order.get (i) != -1) { continue; }
-			
-			IntMajorValue imv = majors.get (i);
-			List <Integer> major = imv.getJustSorted ();
-			major = major.stream ()
-						 .filter (v -> !used.contains (v))
-						 .collect (Collectors.toList ());
-			
-			if (major.size () > 0) {
-				int value = major.get (0);
-				order.set (i, value);
-				used.add (value);
-			} else {
-				String message = "Can't diagonalize matrix (index " + i + ")";
-				throw new IllegalStateException (message);
-			}
+			tnames.add (cnames.get (columns.get (i).s));
 		}
-		*/
-		
-		System.out.println ("Order: " + order);
-		double [][] tmp = new double [height][width];
-		for (int i = 0; i < height; i++) {
-			for (int j = 0; j < width; j++) {
-				tmp [i][j] = this.matrix [i][Math.max (order.get (j), 0)];
-			}
-		}
+		cnames = tnames;
 		
 		this.matrix = tmp;
 		return this;
-	}
-	
-	@SuppressWarnings ("unused")
-	private <T> List <T> makePolarList (List <T> list, Comparator <T> compare, int polar) {
-		if (list == null) {
-			return list;
-		}
-		
-		List <T> polarList = new ArrayList <> (list);
-		//list.sort (compare);
-		
-		/*
-		 * ASSUMED THAT `list` IS SORTED DESCENDING
-		 */
-		for (int i = 0, l = polar, r = polar + 1, side = 0; 
-				i < list.size (); i++, side = (side + 1) & 1) {
-			T value = list.get (i);
-			// Sides:  * 0 - left
-			//         * 1 - right
-			// Action: * set value
-			//         * move carriage to 1 position
-			
-			// Result will look like:
-			// 5 3 1 2 4 6 7 8 9 ...
-			// For the situation when polar at 2 position
-			if (side == 0) {
-				if (l >= 0) {
-					polarList.set (l, value);
-					l -= 1; // Move 1 left
-				} else {
-					polarList.set (r, value);
-					r += 1; // Move 1 right
-				}
-			} else if (side == 1) {
-				if (r < polarList.size ()) {
-					polarList.set (r, value);
-					r += 1; // Move 1 right
-				} else {
-					polarList.set (l, value);
-					l -= 1; // Move 1 left
-				}
-			}
-		}
-		
-		//System.out.println (polar + " " + polarList);
-		return polarList;
 	}
 	
 	public double [][] getOriginal () {
@@ -295,6 +210,16 @@ public class HeatMatrix {
 		}
 		
 		return matrix;
+	}
+	
+	@Override
+	public List <String> getColumnNames () {
+		return Collections.unmodifiableList (cnames);
+	}
+
+	@Override
+	public List <String> getRowNames () {
+		return Collections.unmodifiableList (rnames);
 	}
 	
 	@SuppressWarnings ("unused")

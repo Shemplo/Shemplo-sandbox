@@ -12,10 +12,10 @@ public class GradientColor {
 	
 	public Color getGradient (double part) {
 		int [] color = new int [] {
-			FIRST.getRed   () + (int) ((SECOND.getRed   () - FIRST.getRed   ()) * part),
-			FIRST.getGreen () + (int) ((SECOND.getGreen () - FIRST.getGreen ()) * part),
-			FIRST.getBlue  () + (int) ((SECOND.getBlue  () - FIRST.getBlue  ()) * part),
-			FIRST.getAlpha () + (int) ((SECOND.getAlpha () - FIRST.getAlpha ()) * part)
+			SECOND.getRed   () + (int) ((FIRST.getRed   () - SECOND.getRed   ()) * part),
+			SECOND.getGreen () + (int) ((FIRST.getGreen () - SECOND.getGreen ()) * part),
+			SECOND.getBlue  () + (int) ((FIRST.getBlue  () - SECOND.getBlue  ()) * part),
+			SECOND.getAlpha () + (int) ((FIRST.getAlpha () - SECOND.getAlpha ()) * part)
 		};
 		
 		return new Color (color [0], color [1], color [2], color [3]);
