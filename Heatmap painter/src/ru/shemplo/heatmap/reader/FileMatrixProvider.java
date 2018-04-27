@@ -50,6 +50,7 @@ public class FileMatrixProvider implements MatrixProvider {
 			String line = br.readLine ().trim ();
 			String [] names = line.split ("\\s+");
 			cnames = Arrays.asList (names);
+			//cnames.remove (0);
 			
 			while ((line = br.readLine ()) != null) {
 				line = line.trim ();

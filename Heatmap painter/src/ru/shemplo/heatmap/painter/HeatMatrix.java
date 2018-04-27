@@ -208,6 +208,25 @@ public class HeatMatrix implements MatrixProvider {
 		return matrix;
 	}
 	
+	public List <Trip <String, Double, String>> getBestMatches () {
+		List <Trip <String, Double, String>> matches = new ArrayList <> ();
+		for (int i = 0; i < height; i++) {
+			double max = 0; int index = -1;
+			for (int j = 0; j < width; j++) {
+				if (max < this.matrix [i][j]) {
+					max = matrix [i][j];
+					index = j;
+				}
+			}
+			
+			String column = cnames.get (index);
+			String row = rnames.get (i);
+			matches.add (Trip.mt (row, max * norma, column));
+		}
+		
+		return matches;
+	}
+	
 	@Override
 	public List <String> getColumnNames () {
 		return Collections.unmodifiableList (cnames);
