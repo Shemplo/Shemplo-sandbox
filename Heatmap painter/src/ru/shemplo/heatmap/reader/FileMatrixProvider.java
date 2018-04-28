@@ -51,7 +51,7 @@ public class FileMatrixProvider implements MatrixProvider {
 			String [] names = line.split ("\\s+");
 			cnames = Arrays.asList (names);
 			cnames = new ArrayList <> (cnames);
-			if (cnames.size () > 0 && cnames.get (0) == "#") {
+			if (cnames.size () > 0 && cnames.get (0).equals ("#")) {
 				cnames.remove (0);
 			}
 			

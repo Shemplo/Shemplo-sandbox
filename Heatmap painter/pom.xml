@@ -2,7 +2,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>ru.shemplo</groupId>
   <artifactId>heatmap.painrer</artifactId>
-  <version>0.1.0</version>
+  <version>0.2.1</version>
   <build>
     <sourceDirectory>src</sourceDirectory>
     <plugins>

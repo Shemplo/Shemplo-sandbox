@@ -44,7 +44,7 @@ public class RunPainter {
 		}
 		HeatMatrix hm = new HeatMatrix (mp);
 		
-		GradientColor gc = new GradientColor (Color.WHITE, Color.BLACK);
+		GradientColor gc = new GradientColor (Color.RED, Color.WHITE);
 		Color [][] matrix = hm.diagonalize ().getColorMatrix (gc);
 		double [][] original = hm.getMatrix ();
 		
