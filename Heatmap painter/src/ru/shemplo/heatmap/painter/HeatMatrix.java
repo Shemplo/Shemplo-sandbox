@@ -211,7 +211,7 @@ public class HeatMatrix implements MatrixProvider {
 	public List <Trip <String, Double, String>> getBestMatches () {
 		List <Trip <String, Double, String>> matches = new ArrayList <> ();
 		for (int i = 0; i < height; i++) {
-			double max = 0; int index = -1;
+			double max = -1; int index = -1;
 			for (int j = 0; j < width; j++) {
 				if (max < this.matrix [i][j]) {
 					max = matrix [i][j];
