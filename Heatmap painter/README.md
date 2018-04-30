@@ -8,6 +8,14 @@ This one is for mapping two sets of sets of data with known attitude coefficient
 Due to numbers can be placed in undefined order, the visual analysis can be complicated.
 So this heatmap painter solves such problem by sorting data to diagonal representation.
 
-#### Example: 
+#### Build:
+
+```
+$ mvn package
+
+$ java -cp heatmap.painter*.jar ru.shemplo.heatmap.painter.RunPainter [path to matrix]
+```
+
+#### Example:
 
 ![example](heatmap.jpg)
