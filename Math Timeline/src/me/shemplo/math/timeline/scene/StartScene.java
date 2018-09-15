@@ -43,7 +43,7 @@ public class StartScene extends StackPane {
         
         Button button = new Button ("Всё понятно, начинаем");
         vertical.getChildren ().add (button);
-        VBox.setMargin (button, new Insets (20, 115, 30, 115));
+        VBox.setMargin (button, new Insets (20, 125, 30, 115));
         button.setFont (new Font (16));
         button.setOnMouseClicked (me -> {
             Run.swtichScene (AppSceneEnum.GAME);
