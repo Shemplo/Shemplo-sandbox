@@ -63,6 +63,8 @@ public class DataParser {
              . done ();
     
     public SourceDataset parse (InputStream is) throws IOException {
+        System.out.println ("[] Parsing input file ...");
+        
         SourceDataset dataset = new SourceDataset ();
         
         try (
@@ -74,6 +76,8 @@ public class DataParser {
                 if (line.trim ().length () == 0) { continue; }
                 List <String> tokens = splitOnTokens (line);
                 if ("\"ID_REF\"".equals (tokens.get (0))) {
+                    System.out.println ("[] Parsing expression matrix ...");
+                    
                     List <String> order = tokens.stream ().skip (1)
                                                 .map (t -> t.replace ("\"", ""))
                                                 .collect (Collectors.toList ());
@@ -81,7 +85,8 @@ public class DataParser {
                         if (line.trim ().length () == 0) { continue; }
                         
                         tokens = splitOnTokens (line);
-                        if (line.charAt (0) != '"') { 
+                        if (line.charAt (0) != '"') {
+                            System.out.println ("[] Matrix parsed");
                             break; 
                         }
                         

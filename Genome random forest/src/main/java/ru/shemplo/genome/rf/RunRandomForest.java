@@ -23,13 +23,15 @@ public class RunRandomForest {
             throw new IllegalStateException (message);
         }
         
-        @SuppressWarnings ("unused")
         SourceDataset dataset = null;
         try (                
             InputStream is = Files.newInputStream (path);
         ) {
             dataset = new DataParser ().parse (is);
         }
+        
+        dataset.getNormalizedMatrix ().getShuffledMatrix ();
+        System.out.println ("END");
     }
     
 }
