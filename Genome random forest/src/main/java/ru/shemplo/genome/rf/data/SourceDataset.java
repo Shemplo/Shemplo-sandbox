@@ -77,7 +77,7 @@ public class SourceDataset {
             normalizeRow (matrix [i]);
         }
         
-        return new NormalizedMatrix (genesName, entitiesName, matrix);
+        return new NormalizedMatrix (genesName, entitiesName, matrix, this);
     }
             
     private void normalizeRow (double [] row) {

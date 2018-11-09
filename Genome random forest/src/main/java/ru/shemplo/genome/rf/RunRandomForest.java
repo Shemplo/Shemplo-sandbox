@@ -7,7 +7,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 import ru.shemplo.genome.rf.data.DataParser;
+import ru.shemplo.genome.rf.data.NormalizedMatrix;
 import ru.shemplo.genome.rf.data.SourceDataset;
+import ru.shemplo.genome.rf.forest.DecisionTree;
 
 public class RunRandomForest {
  
@@ -30,7 +32,9 @@ public class RunRandomForest {
             dataset = new DataParser ().parse (is);
         }
         
-        dataset.getNormalizedMatrix ().getShuffledMatrix ();
+        NormalizedMatrix matrix = dataset.getNormalizedMatrix ().getSubMatrix (0, 10, 0, 55);
+        DecisionTree tree = new DecisionTree (dataset, matrix);
+        System.out.println (tree.toString ());
         System.out.println ("END");
     }
     

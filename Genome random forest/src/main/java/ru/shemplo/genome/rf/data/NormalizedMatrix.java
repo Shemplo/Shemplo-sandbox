@@ -14,9 +14,12 @@ import ru.shemplo.snowball.stuctures.Pair;
 
 @AllArgsConstructor @Getter
 public class NormalizedMatrix {
- 
+
+                                // rows    columns
     private final List <String> genesName, entitiesName;
     private final double [][] matrix;
+    
+    private final SourceDataset dataset;
     
     /**
      * Subtracts matrix with specified bounds 
@@ -60,7 +63,7 @@ public class NormalizedMatrix {
         List <String> subGenes = genesName.subList (vf, vt), 
                 subEntities = entitiesName.subList (hf, ht);
         
-        return new NormalizedMatrix (subGenes, subEntities, sub);
+        return new NormalizedMatrix (subGenes, subEntities, sub, dataset);
     }
     
     private void checkHorizontal (int req, String index) {
@@ -99,7 +102,21 @@ public class NormalizedMatrix {
                   matrix [i], 0, matrix [i].length);
         }
         
-        return new NormalizedMatrix (genes, entities, matrix);
+        return new NormalizedMatrix (genes, entities, matrix, dataset);
+    }
+    
+    public double denormalizeValue (String gene, double value) {
+        double max = -1.0, min = Double.MAX_VALUE;
+        for (int i = 0; i < entitiesName.size (); i++) {
+            String name = entitiesName.get (i);
+            SourceEntity entity = 
+                    dataset.getEntityByGeoAccess (name);
+            double exp = entity.getExpressionByGene (gene);
+            max = Math.max (max, exp);
+            min = Math.min (min, exp);
+        }
+        
+        return value * (max - min) + min;
     }
     
 }
