@@ -3,7 +3,6 @@ package ru.shemplo.genome.rf.forest;
 import static java.lang.Math.*;
 
 import java.util.List;
-import java.util.Random;
 
 import ru.shemplo.genome.rf.data.EntityVerdict;
 import ru.shemplo.genome.rf.data.NormalizedMatrix;
@@ -11,12 +10,9 @@ import ru.shemplo.genome.rf.data.SourceDataset;
 import ru.shemplo.genome.rf.data.SourceEntity;
 import ru.shemplo.genome.rf.forest.DecisionTree.Layer;
 
-public class AvDistanceStrategy implements SplitStrategy {
-
-    protected final Random random = new Random ();
-    protected double bestDistance = 0;
-    protected double minAverage = 0;
-    protected int bestIndex = -1;
+public class AvDeviationStrategy extends AvDistanceStrategy {
+    
+    protected double bestDeviation = Double.MAX_VALUE;
     
     @Override
     public void suggestFeature (int featureIndex, 
@@ -35,38 +31,38 @@ public class AvDistanceStrategy implements SplitStrategy {
         }
         
         for (int j = 0; j < sums.length; j++) { sums [j] /= number [j]; }
-        double distance = Math.abs (sums [0] - sums [1]);
+        double distance = abs (sums [0] - sums [1]),
+               tmp = min (sums [0], sums [1]);
+        sums [0] = sums [1] = 0.0d;
         
-        if (distance > bestDistance 
-                || (distance == bestDistance 
+        for (int j = 0; j < entities.size (); j++) {
+            SourceEntity entity = dataset.getEntityByGeoAccess (entities.get (j));
+            int part = EntityVerdict.NORMAL.equals (entity.getVerdict ()) ? 0 : 1;
+            double delta = sums [part] - mx [featureIndex] [j];
+            sums [part] = max (sums [part], delta * delta);
+        }
+        
+        double devivation = Math.max (sums [0], sums [1]);
+        if (devivation < bestDeviation 
+                || (devivation == bestDeviation 
                     && random.nextBoolean ())) {
-            minAverage = min (sums [0], sums [1]);
+            bestDeviation = devivation;
             bestIndex  = featureIndex;
             bestDistance = distance;
+            minAverage = tmp;
         }
-    }
-
-    @Override
-    public double getBestSplit () {
-        return minAverage + bestDistance / 2;
     }
     
     @Override
-    public int getBestFeature () {
-        return bestIndex;
-    }
-
-    @Override
     public void reset () {
-        bestDistance = 0;
-        bestIndex = -1;
-        minAverage = 0;
+        super.reset ();
+        
+        bestDeviation = Double.MAX_VALUE;
     }
-
+    
     @Override
     public boolean isDifferenceSmall () {
-        return bestDistance < 1e-4;
+        return bestDistance > 0.5;
     }
-
     
 }
