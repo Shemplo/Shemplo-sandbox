@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
@@ -42,9 +43,16 @@ public class DecisionTree {
         
         private Predicate <Double> splitter;
         private Set <String> usedGenes;
+        private String splitGene;
         private int depth;
         
-        public boolean isSplittedEnough () {
+        public boolean isSplittedEnough () {            
+            double zeros = countNormalEntities () * 1.0;
+            return (zeros / enities.size () >= 0.95) // 95% of entities are the same
+                || depth >= 9;
+        }
+        
+        private int countNormalEntities () {
             AtomicInteger zero = new AtomicInteger ();
             enities.forEach (e -> {
                 SourceEntity entity = dataset.getEntityByGeoAccess (e);
@@ -52,9 +60,26 @@ public class DecisionTree {
                 zero.addAndGet (NORMAL.equals (verdict) ? 1 : 0);
             });
             
-            double zeros = zero.get () * 1.0;
-            return (zeros / enities.size () >= 0.95) // 95% of entities are the same
-                || depth >= 9;
+            return zero.get ();
+        }
+        
+        public EntityVerdict predict (Map <String, Double> genes) {
+            if (getSplitter () != null && getSplitGene () != null) {
+                double exp = genes.get (getSplitGene ());
+                boolean test = getSplitter ().test (exp);
+                
+                Layer next = test ? getRight () : getLeft ();
+                return next.predict (genes);                
+            }
+            
+            return getClassification ();
+        }
+        
+        private EntityVerdict getClassification () {
+            int zeros = countNormalEntities ();
+            return zeros >= enities.size () / 2
+                 ? EntityVerdict.NORMAL
+                 : EntityVerdict.MELANOMA;
         }
         
     }
@@ -111,27 +136,26 @@ public class DecisionTree {
         });
         
         layer.setSplitter (splitter);
+        layer.setSplitGene (gene);
         
         Set <String> res = new HashSet <> (reserved);
         res.add (gene);
         
-        layer.setLeft (Layer.builder ().usedGenes (res)
-                            .depth (layer.getDepth () + 1)
-                            .dataset (dataset)
-                            .enities (left)
-                            .build ());
+        layer.setLeft (Layer.builder ().usedGenes (res).depth (layer.getDepth () + 1)
+                            .dataset (dataset).enities (left).build ());
         if (!layer.getLeft ().isSplittedEnough ()) {
             split (layer.getLeft ());
         }
         
-        layer.setRight (Layer.builder ().usedGenes (res)
-                             .depth (layer.getDepth () + 1)
-                             .dataset (dataset)
-                             .enities (right)
-                             .build ());
+        layer.setRight (Layer.builder ().usedGenes (res).depth (layer.getDepth () + 1)
+                             .dataset (dataset).enities (right).build ());
         if (!layer.getRight ().isSplittedEnough ()) {
             split (layer.getRight ());
         }
+    }
+    
+    public EntityVerdict predict (Map <String, Double> genes) {
+        return this.root.predict (genes);
     }
     
 }

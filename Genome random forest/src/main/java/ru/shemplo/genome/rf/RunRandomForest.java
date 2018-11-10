@@ -7,9 +7,11 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 import ru.shemplo.genome.rf.data.DataParser;
+import ru.shemplo.genome.rf.data.EntityVerdict;
 import ru.shemplo.genome.rf.data.NormalizedMatrix;
 import ru.shemplo.genome.rf.data.SourceDataset;
-import ru.shemplo.genome.rf.forest.DecisionTree;
+import ru.shemplo.genome.rf.data.SourceEntity;
+import ru.shemplo.genome.rf.forest.RandomForest;
 
 public class RunRandomForest {
  
@@ -32,9 +34,18 @@ public class RunRandomForest {
             dataset = new DataParser ().parse (is);
         }
         
-        NormalizedMatrix matrix = dataset.getNormalizedMatrix ().getSubMatrix (0, 10, 0, 55);
-        DecisionTree tree = new DecisionTree (dataset, matrix);
-        System.out.println (tree.toString ());
+        NormalizedMatrix matrix = dataset.getNormalizedMatrix ();
+        RandomForest forest = new RandomForest (matrix, dataset, 121).train ();
+        
+        int correct = 0, total = 0;
+        for (int i = 0; i < dataset.getSize (); i++, total++) {
+            SourceEntity entity = dataset.getEntityByIndex (i);
+            if (entity.getVerdict () == EntityVerdict.NEVUS) { total--; continue; }
+            if (forest.predict (entity.getGenesExpMap ()).equals (entity.getVerdict ())) {
+                correct += 1;
+            }
+        }
+        System.out.println ("Corrrect: " + correct + " / " + total);
         System.out.println ("END");
     }
     

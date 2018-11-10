@@ -13,7 +13,7 @@ import ru.shemplo.snowball.stuctures.Pair;
 public class SourceEntity {
 
     private final List <Pair <String, Double>> genesExpList;
-    private final Map <String, Double> genesExpMap;
+    @Getter private final Map <String, Double> genesExpMap;
     
     @Getter @Setter private EntityVerdict verdict;
     @Getter @Setter private String geoAccess;

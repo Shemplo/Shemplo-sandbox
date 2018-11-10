@@ -53,8 +53,8 @@ public class NormalizedMatrix {
      * 
      */
     public NormalizedMatrix getSubMatrix (int vf, int vt, int hf, int ht) {
-        checkHorizontal (hf, "hf"); checkHorizontal (ht, "ht");
-        checkVertical (vf, "vf"); checkVertical (vt, "vt");
+        checkHorizontal (hf, "hf"); checkHorizontal (ht - 1, "ht");
+        checkVertical (vf, "vf"); checkVertical (vt - 1, "vt");
         
         double [][] sub = new double [vt - vf][ht - hf];
         for (int i = 0; i < sub.length; i++) {
@@ -117,6 +117,14 @@ public class NormalizedMatrix {
         }
         
         return value * (max - min) + min;
+    }
+    
+    public int getNumberOfEntities () {
+        return entitiesName.size ();
+    }
+    
+    public int getNumberOfGenes () {
+        return genesName.size ();
     }
     
 }
