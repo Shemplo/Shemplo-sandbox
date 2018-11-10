@@ -22,7 +22,7 @@ public class SourceEntity {
     public SourceEntity (String name) {
         this.genesExpList = new ArrayList <> ();
         this.genesExpMap = new HashMap <> ();
-        this.name = name;
+        this.geoAccess = this.name = name;
     }
     
     public void addGeneExpression (Pair <String, Double> expression) {

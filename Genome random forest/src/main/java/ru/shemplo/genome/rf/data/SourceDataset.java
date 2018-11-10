@@ -25,6 +25,7 @@ public class SourceDataset {
             return; // Classify only `normal` and `melanoma`
         }
         
+        this.entitiesMap.put (entity.getGeoAccess (), entity);
         this.entitiesList.add (entity);
     }
     

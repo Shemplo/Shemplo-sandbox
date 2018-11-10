@@ -11,6 +11,7 @@ import ru.shemplo.genome.rf.data.EntityVerdict;
 import ru.shemplo.genome.rf.data.NormalizedMatrix;
 import ru.shemplo.genome.rf.data.SourceDataset;
 import ru.shemplo.genome.rf.data.SourceEntity;
+import ru.shemplo.genome.rf.forest.AvDistanceStrategy;
 import ru.shemplo.genome.rf.forest.RandomForest;
 
 public class RunRandomForest {
@@ -35,7 +36,8 @@ public class RunRandomForest {
         }
         
         NormalizedMatrix matrix = dataset.getNormalizedMatrix ();
-        RandomForest forest = new RandomForest (matrix, dataset, 121).train ();
+        RandomForest forest = new RandomForest (matrix, new AvDistanceStrategy (), dataset, 4, 121)
+                            . train ();
         
         int correct = 0, total = 0;
         for (int i = 0; i < dataset.getSize (); i++, total++) {

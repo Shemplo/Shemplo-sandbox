@@ -15,26 +15,25 @@ public class RandomForest {
     private List <DecisionTree> trees = new ArrayList <> ();
     
     private final NormalizedMatrix matrix;
+    private final SplitStrategy strategy;
     private final SourceDataset dataset;
-    private final int size;
+    private final int parts, size;
     
     public RandomForest train () {
         System.out.println ("[] Training trees...");
-        final int parts = 4; // the number of parts into which the matrix will be divided
         
         for (int i = 0; i < size; i++) {
-            if (i % 10 == 0) {
+            if (i % 100 == 0) {
                 String format = " - tree %3d of %-3d";
                 System.out.println (String.format (format, i + 1, size));
             }
-            
             
             int part = i % parts, height = matrix.getNumberOfGenes () / parts;
             int start = height * part, end = height * (part + 1);
             int width = matrix.getNumberOfEntities ();
             
             NormalizedMatrix tmp = matrix.getSubMatrix (start, end, 0, width);
-            trees.add (new DecisionTree (dataset, tmp));
+            trees.add (new DecisionTree (dataset, tmp, strategy));
         }
         
         return this;
