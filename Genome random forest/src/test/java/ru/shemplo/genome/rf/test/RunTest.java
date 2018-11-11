@@ -113,12 +113,13 @@ public class RunTest {
             }
         }
         
-        AtomicInteger correct = new AtomicInteger ();
+        AtomicInteger correct = new AtomicInteger (), total = new AtomicInteger ();
         zip (testRows.keySet ().stream (), Stream.iterate (0, i -> i + 1), Pair::mp)
           . forEach (row -> {
             SourceEntity entity = new SourceEntity ("testEntity" + row.S);
             int answer = testAnswers.get (row.F);
             if (answer >= 2) { return; }
+            total.incrementAndGet ();
             
             entity.setVerdict (EntityVerdict.values () [answer * 2]);
             zip (testRows.get (row.F).stream (), Stream.iterate (0, i -> i + 1), Pair::mp).forEach (fs -> {
@@ -131,8 +132,9 @@ public class RunTest {
             }
         });
         
+        
         System.out.println ("Corrrect: " + correct.get () 
-                         + " / " + testRows.size ());
+                         + " / " + total.get ());
     }
     
     private static String convertLetterToDigit (String token) {
