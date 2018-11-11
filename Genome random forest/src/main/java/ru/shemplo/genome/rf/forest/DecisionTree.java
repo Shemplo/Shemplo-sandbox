@@ -3,9 +3,13 @@ package ru.shemplo.genome.rf.forest;
 import static ru.shemplo.genome.rf.data.EntityVerdict.*;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
@@ -43,13 +47,14 @@ public class DecisionTree {
         
         private Predicate <Double> splitter;
         private Set <String> usedGenes;
+        private double probability;
         private String splitGene;
         private int depth;
         
         public boolean isSplittedEnough () {            
             double zeros = countNormalEntities () * 1.0;
             return (zeros / enities.size () >= 0.95) // 95% of entities are the same
-                || depth >= 9;
+                || depth >= getMaxTreeDepth ();
         }
         
         private int countNormalEntities () {
@@ -80,6 +85,21 @@ public class DecisionTree {
             return zeros >= enities.size () / 2
                  ? EntityVerdict.NORMAL
                  : EntityVerdict.MELANOMA;
+        }
+        
+        public void propagateProbabilities (int depth, double parent, 
+                Map <String, Double> probs) {
+            if (getDepth () == depth) {
+                if (getSplitGene () == null) { return; }
+                this.probability = probs.get (getSplitGene ()) * parent;
+            } else {
+                final double prob = getProbability ();
+                Layer [] layers = {getLeft (), getRight ()};
+                Arrays.asList (layers).forEach (l -> {
+                    if (l == null) { return; }
+                    l.propagateProbabilities (depth, prob, probs);
+                });
+            }
         }
         
     }
@@ -133,6 +153,60 @@ public class DecisionTree {
     
     public EntityVerdict predict (Map <String, Double> genes) {
         return this.root.predict (genes);
+    }
+    
+    public static final String nameOfMeta = "$numberOfLayers";
+    public static int getMaxTreeDepth () { return 9; }
+    
+    public Map <String, Integer> getGenesOnDepth (int depth) {
+        Map <String, Integer> counters = new HashMap <> ();
+        counters.put (nameOfMeta, 0);
+        
+        Queue <Layer> queue = new LinkedList <> ();
+        queue.add (root);
+        
+        while (!queue.isEmpty ()) {
+            Layer layer = queue.poll ();
+            if (layer == null) { continue; }
+            
+            if (layer.getDepth () != depth) {
+                queue.add (layer.getLeft ()); queue.add (layer.getRight ());
+            } else {
+                String gene = layer.getSplitGene ();
+                if (gene == null) { continue; }
+                counters.putIfAbsent (gene, 0);
+                
+                counters.compute (nameOfMeta, (__, v) -> v + 1);
+                counters.compute (gene, (__, p) -> p + 1);
+            }
+        }
+        
+        return counters;
+    }
+    
+    public void propagateProbabilities (int depth, double parent, 
+            Map <String, Double> probs) {
+        this.root.propagateProbabilities (depth, parent, probs);
+    }
+    
+    public Map <String, Double> getAllProbabilities () {
+        Map <String, Double> probs = new HashMap <> ();
+        Queue <Layer> queue = new LinkedList <> ();
+        queue.add (root);
+        
+        while (!queue.isEmpty ()) {            
+            Layer layer = queue.poll ();
+            if (layer == null) { continue; }
+            
+            String gene = layer.getSplitGene ();
+            if (gene == null) { continue; }
+            probs.putIfAbsent (gene, 0.0d);
+            
+            probs.compute (gene, (__, v) -> v + layer.getProbability ());
+            queue.add (layer.getLeft ()); queue.add (layer.getRight ());
+        }
+        
+        return probs;
     }
     
 }

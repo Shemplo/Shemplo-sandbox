@@ -22,7 +22,7 @@ import ru.shemplo.genome.rf.data.EntityVerdict;
 import ru.shemplo.genome.rf.data.NormalizedMatrix;
 import ru.shemplo.genome.rf.data.SourceDataset;
 import ru.shemplo.genome.rf.data.SourceEntity;
-import ru.shemplo.genome.rf.forest.AvDeviationStrategy;
+import ru.shemplo.genome.rf.forest.AvDistanceStrategy;
 import ru.shemplo.genome.rf.forest.RandomForest;
 import ru.shemplo.genome.rf.forest.SplitStrategy;
 import ru.shemplo.snowball.stuctures.Pair;
@@ -69,8 +69,8 @@ public class RunTest {
         });
         
         NormalizedMatrix matrix = dataset.getNormalizedMatrix ();
-        SplitStrategy strategy = new AvDeviationStrategy ();
-        RandomForest forest = new RandomForest (matrix, strategy, dataset, 3, 9 * 10)
+        SplitStrategy strategy = new AvDistanceStrategy ();
+        RandomForest forest = new RandomForest (matrix, strategy, dataset, 10, 301)
                             . train ();
         
         Map <Integer, List <Double>> testRows = new HashMap <> ();
@@ -135,6 +135,18 @@ public class RunTest {
         
         System.out.println ("Corrrect: " + correct.get () 
                          + " / " + total.get ());
+        /*
+        forest.makeProbabilities ().forEach ((k, v) -> {
+            System.out.println (String.format (" - %12s %.8f", k, v));
+        });
+        */
+        Map <String, Double> probs = forest.makeProbabilities ();
+        probs.keySet ().stream ()
+                       . map (k -> Pair.mp (k, probs.get (k)))
+                       . sorted ((pa, pb) -> -Double.compare (pa.S, pb.S))
+                       . map (p -> String.format (" - %12s %.12f", p.F, p.S))
+                       . forEach (System.out::println);
+        
     }
     
     private static String convertLetterToDigit (String token) {

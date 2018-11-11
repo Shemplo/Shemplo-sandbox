@@ -1,8 +1,11 @@
 package ru.shemplo.genome.rf.forest;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import lombok.RequiredArgsConstructor;
 import ru.shemplo.genome.rf.data.EntityVerdict;
@@ -20,7 +23,7 @@ public class RandomForest {
     private final int parts, size;
     
     public RandomForest train () {
-        System.out.println ("[] Training trees...");
+        System.out.println ("[] Training trees ...");
         
         for (int i = 0; i < size; i++) {
             if (i % 100 == 0) {
@@ -50,6 +53,54 @@ public class RandomForest {
         return normal >= trees.size () / 2
              ? EntityVerdict.NORMAL
              : EntityVerdict.MELANOMA;
+    }
+    
+    public Map <String, Double> makeProbabilities () {
+        int depth = DecisionTree.getMaxTreeDepth ();
+        Map <String, Double> genes = new HashMap <> ();
+        AtomicInteger layers = new AtomicInteger ();
+        
+        for (int i = 0; i < depth; i++) {
+            final int layer = i;
+            genes.clear ();
+            layers.set (0);
+            
+            trees.forEach (t -> {
+                Map <String, Integer> onLayer = t.getGenesOnDepth (layer);
+                layers.addAndGet (onLayer.remove (DecisionTree.nameOfMeta));
+                onLayer.keySet ().forEach (k -> {
+                    genes.putIfAbsent (k, 0.0d);
+                    
+                    Double value = onLayer.get (k).doubleValue ();
+                    genes.merge (k, value, Double::sum);
+                });
+            });
+            
+            genes.keySet ().forEach (k -> {
+                genes.compute (k, (__, v) -> v / layers.get ());
+            });
+            
+            trees.forEach (t -> t.propagateProbabilities (layer, 1, genes));
+        }
+        
+        genes.clear ();
+        trees.forEach (t -> {
+            Map <String, Double> inTree = t.getAllProbabilities ();
+            inTree.keySet ().forEach (k -> {
+                genes.putIfAbsent (k, 0.0d);
+                
+                Double value = inTree.get (k).doubleValue ();
+                genes.merge (k, value, Double::sum);
+            });
+        });
+        
+        AtomicReference <Double> norm = new AtomicReference <> (0.0d);
+        genes.values ().forEach (v -> norm.updateAndGet (r -> r + v));
+        genes.keySet ().forEach (k -> {
+            genes.compute (k, (__, v) -> v * (1 / norm.get ()));
+        });
+        
+        return genes;
     }
     
 }
