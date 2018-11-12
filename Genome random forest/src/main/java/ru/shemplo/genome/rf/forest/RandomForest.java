@@ -5,7 +5,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 
 import lombok.RequiredArgsConstructor;
 import ru.shemplo.genome.rf.data.EntityVerdict;
@@ -80,7 +79,7 @@ public class RandomForest {
                 genes.compute (k, (__, v) -> v / layers.get ());
             });
             
-            trees.forEach (t -> t.propagateProbabilities (layer, 1, genes));
+            trees.forEach (t -> t.propagateProbabilities (layer, 1.0 / trees.size (), genes));
         }
         
         genes.clear ();
@@ -94,11 +93,13 @@ public class RandomForest {
             });
         });
         
+        /*
         AtomicReference <Double> norm = new AtomicReference <> (0.0d);
         genes.values ().forEach (v -> norm.updateAndGet (r -> r + v));
         genes.keySet ().forEach (k -> {
             genes.compute (k, (__, v) -> v * (1 / norm.get ()));
         });
+        */
         
         return genes;
     }
