@@ -1,9 +1,16 @@
 package ru.shemplo.genome.rf;
 
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
+import java.io.BufferedReader;
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
 
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -38,6 +45,29 @@ public class RunRandomForest {
             dataset = new DataParser ().parse (is);
         }
         
+        Map <String, String> decodedNames = new HashMap <> ();
+        String baseFile = "/de.csv";
+        try (
+            InputStream is = RunRandomForest.class.getResourceAsStream (baseFile);
+            Reader r = new InputStreamReader (is, StandardCharsets.UTF_8);
+            BufferedReader br = new BufferedReader (r);
+        ) {
+            br.readLine (); // Skip titles line
+            
+            String line = null;
+            while ((line = br.readLine ()) != null) {
+                if (line.length () == 0) { continue; }
+                
+                List <String> tokens = Arrays.asList (line.split ("\",\""));
+                decodedNames.put (tokens.get (2), tokens.get (4)); 
+                //                           ID / Gene.symbol
+            }
+        }
+        
+        for (int i = 0; i < dataset.getSize (); i++) {
+            dataset.updateEntity (i, e -> e.restrictGenes (decodedNames));
+        }
+        
         NormalizedMatrix matrix = dataset.getNormalizedMatrix ();
         SplitStrategy strategy = new AvDistanceStrategy ();
         RandomForest forest = new RandomForest (matrix, strategy, dataset, 10, 301)
@@ -48,7 +78,7 @@ public class RunRandomForest {
         probs.keySet ().stream ()
                        . map (k -> Pair.mp (k, probs.get (k)))
                        . sorted ((pa, pb) -> -Double.compare (pa.S, pb.S))
-                       . map (p -> String.format (" - %24s %.16f", p.F, p.S))
+                       . map (p -> String.format (" - %32s %.16f", p.F, p.S))
                        . forEach (System.out::println);
         
         long end = System.currentTimeMillis ();
