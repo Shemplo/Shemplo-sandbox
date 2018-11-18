@@ -1,0 +1,56 @@
+    KRT18    PDGFRA     ADRB2    ADRA2A   TPD52L1     YWHAZ       TEK      TJP2      NCK1   ARHGEF7     GRB14 
+    0.617     0.487     0.450     0.447     0.423     0.419     0.367     0.365     0.355     0.349     0.344 
+	
+   SHANK2     AGTR1      SVIL      MKL2       LPP      ETS2      JAK1      BAG1   GPRASP1      RAF1    PECAM1 
+    0.307     0.266     0.262     0.261     0.241     0.225     0.209     0.209     0.208     0.200     0.197 
+	
+      SRC       KDR     PDGFC       CRK      CDK5      GRB2     EPHB3    TGFBR2       GHR    TGFBR3     MINK1 
+    0.196     0.137     0.114     0.104     0.103     0.084     0.079     0.078     0.078     0.078     0.078 
+	
+    PRKCD      AKT1     NR3C2     NISCH        AR      EGR1      EGFR    ATP1B1      ABL1    TCF7L2     PRKCZ 
+    0.075     0.065     0.065     0.063     0.055     0.054     0.047     0.047     0.041     0.037     0.036 
+	
+   NFKBIA      TAL1    EFEMP2    ABLIM1    PLSCR4      IRS1      KLF4       ERG     ACTA2     KRT15     EP300 
+    0.036     0.034     0.033     0.033     0.033     0.029     0.028     0.026     0.026     0.026     0.025 
+	
+   PIK3R1    PTPN13  ARHGAP29    CREBBP     CDK16     STAT3       HLF      KRT7     ITGAV     AZGP1     MAGI1 
+    0.024     0.021     0.021     0.020     0.020     0.020     0.019     0.019     0.016     0.016     0.015 
+	
+  FAM107A      KLF2      ZEB1     PTPRF      NET1     WASF3     IL6ST      TP53     S1PR1      BCL6    CTNNB1 
+    0.015     0.015     0.015     0.014     0.014     0.014     0.013     0.013     0.013     0.013     0.013 
+	
+    KLF11    TCF7L1     KRT19      TUBB      CDK1     NR3C1     MAP1A    MAD1L1   PIK3C2B      FHL1     ITGA5 
+    0.012     0.012     0.012     0.011     0.010     0.010     0.009     0.009     0.008     0.008     0.008 
+	
+    HDAC1       CBL      FHL2  PPARGC1A       HGS      CAV1     AHNAK       CSK     VIPR1    ZBTB16       FYN 
+    0.007     0.006     0.006     0.006     0.006     0.006     0.006     0.006     0.006     0.005     0.005 
+	
+     PAK3      LDB2      LMO4     HOOK2     ERBB4     CASP7      ELF2     TXNIP      DDB1      ESR1      LMO2 
+    0.005     0.005     0.005     0.005     0.004     0.004     0.004     0.004     0.004     0.004     0.004 
+	
+     PTK2     SMAD3       ILK      ACP1      CLTC     PSEN2     ATXN1     CDC37     HIP1R     LIMS2      TNS1 
+    0.003     0.003     0.003     0.003     0.003     0.003     0.003     0.003     0.003     0.003     0.003 
+	
+     SIK1      IL6R    RASL12     FOXO1       GSN     FABP4     GATA3      FAT4     MAPK1       LYN     PDE4A 
+    0.003     0.003     0.003     0.003     0.003     0.003     0.003     0.003     0.002     0.002     0.002 
+	
+    PTPRK      DNM2     ACTN4    STAT5B     TRAF2     DUSP1      TJP1     CLDN8     GNAI2      FZD4     FBLN2 
+    0.002     0.002     0.002     0.002     0.002     0.002     0.002     0.002     0.002     0.002     0.002 
+	
+     RBPJ    NOTCH2    IGFBP5       GNE      TOB1     PTK2B     SMAD7      SOS1       JUN     CEBPB     ERBB2 
+    0.002     0.002     0.002     0.002     0.001     0.001     0.001     0.001     0.001     0.001     0.001 
+	
+   INPPL1      PCNA      MED1    CDKN2A   PRPF40A      PPIB     HSPA5     APEX2    MAP3K5    MAP3K4      ELK1 
+    0.001     0.001     0.001     0.001     0.001     0.001     0.001     0.001     0.001     0.001     0.001 
+	
+      SET     NDRG1     NCOA4       MET      DLG1     ITSN1     RASA1      IL16      SGTA     NCSTN      ABI2 
+    0.001     0.001     0.001     0.001     0.001     0.001     0.001     0.001     0.001     0.001     0.001 
+	
+   POLR2A    CTNND2    CSNK1D      AMPH      FBN1       VCP      EDAR     STK39     LAMA5     INHBB    UBQLN4 
+    0.001     0.001     0.001     0.001     0.001     0.001     0.001     0.001     0.001     0.001     0.001 
+	
+    PLCB1     CLDN5     STMN1       MBP     CNOT7      MYOC      PER2      SNCA     PDZD2    SPINT2    SETBP1 
+    0.001     0.001     0.001     0.001     0.001     0.001     0.001     0.001     0.001     0.001     0.001 
+	
+      VCL     ITGB5     LTBP1       DMD     CDC42     ARRB2     DOCK9       DSP      FLNC     LDOC1     HOXA5 
+    0.001     0.001     0.001     0.001     0.001     0.001     0.001     0.001     0.001     0.001     0.001

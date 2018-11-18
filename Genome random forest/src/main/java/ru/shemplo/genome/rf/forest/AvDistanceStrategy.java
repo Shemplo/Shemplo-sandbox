@@ -2,6 +2,7 @@ package ru.shemplo.genome.rf.forest;
 
 import static java.lang.Math.*;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
@@ -23,27 +24,37 @@ public class AvDistanceStrategy implements SplitStrategy {
             Layer layer, NormalizedMatrix matrix) {
         List <String> entities = layer.getEnities ();
         SourceDataset dataset = layer.getDataset ();
-        double [][] mx = matrix.getMatrix ();
         
+        List <SourceEntity> list = new ArrayList <> ();
+        for (int j = 0; j < entities.size (); j++) {
+            list.add (dataset.getEntityByGeoAccess (entities.get (j)));
+        }
+        
+        double [] distances = getDifference (list, matrix, featureIndex);
+        if (distances [0] > bestDistance || (distances [0] == bestDistance 
+                                             && random.nextBoolean ())) {
+            minAverage = min (distances [1], distances [2]);
+            bestDistance = distances [0];
+            bestIndex  = featureIndex;
+        }
+    }
+    
+    public double [] getDifference (List <SourceEntity> entities, 
+                       NormalizedMatrix matrix, int featureIndex) {
+        double [][] mx = matrix.getMatrix ();
         double [] sums = {0.0d, 0.0d};
         int [] number = {0, 0};
         
         for (int j = 0; j < entities.size (); j++) {
-            SourceEntity entity = dataset.getEntityByGeoAccess (entities.get (j));
+            SourceEntity entity = entities.get (j);
             int part = EntityVerdict.NORMAL.equals (entity.getVerdict ()) ? 0 : 1;
             sums [part] += mx [featureIndex][j]; number [part] += 1;
         }
         
-        for (int j = 0; j < sums.length; j++) { sums [j] /= number [j]; }
-        double distance = Math.abs (sums [0] - sums [1]);
+        if (number [0] == 0 || number [1] == 0) { return new double [] {0, 0, 0}; }
         
-        if (distance > bestDistance 
-                || (distance == bestDistance 
-                    && random.nextBoolean ())) {
-            minAverage = min (sums [0], sums [1]);
-            bestIndex  = featureIndex;
-            bestDistance = distance;
-        }
+        for (int j = 0; j < sums.length; j++) { sums [j] /= number [j]; }
+        return new double [] {Math.abs (sums [0] - sums [1]), sums [0], sums [1]};
     }
 
     @Override

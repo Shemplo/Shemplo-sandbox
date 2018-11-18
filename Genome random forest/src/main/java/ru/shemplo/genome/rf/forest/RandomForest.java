@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import ru.shemplo.genome.rf.data.EntityVerdict;
 import ru.shemplo.genome.rf.data.NormalizedMatrix;
 import ru.shemplo.genome.rf.data.SourceDataset;
+import ru.shemplo.snowball.stuctures.Pair;
 
 @RequiredArgsConstructor
 public class RandomForest {
@@ -31,7 +32,7 @@ public class RandomForest {
             }
             
             int part = i % parts, height = matrix.getNumberOfGenes () / parts;
-            int start = height * part, end = height * (part + 1);
+            int start = height * part, end = start + height;
             int width = matrix.getNumberOfEntities ();
             
             NormalizedMatrix tmp = matrix.getSubMatrix (start, end, 0, width);
@@ -55,6 +56,7 @@ public class RandomForest {
     }
     
     public Map <String, Double> makeProbabilities () {
+        /*
         int depth = DecisionTree.getMaxTreeDepth ();
         Map <String, Double> genes = new HashMap <> ();
         AtomicInteger layers = new AtomicInteger ();
@@ -92,6 +94,7 @@ public class RandomForest {
                 genes.merge (k, value, Double::sum);
             });
         });
+        */
         
         /*
         AtomicReference <Double> norm = new AtomicReference <> (0.0d);
@@ -100,6 +103,26 @@ public class RandomForest {
             genes.compute (k, (__, v) -> v * (1 / norm.get ()));
         });
         */
+        Map <String, Integer> scores = new HashMap <> ();
+        AtomicInteger total = new AtomicInteger ();
+        
+        trees.forEach (tree -> {
+            Map <String, Integer> localScores = tree.getGeneScores ();
+            localScores.keySet ().stream ()
+                       .map (k -> Pair.mp (k, localScores.get (k)))
+                       .peek    (p -> total.addAndGet (p.S))
+                       .forEach (p -> scores.merge (p.F, p.S, Integer::sum));
+        });
+        
+        Map <String, Double> genes = new HashMap <> ();
+        /*
+        scores.entrySet ().stream ().forEach (e -> {
+            genes.put (e.getKey (), 1.0 * e.getValue () / total.get ());
+        });
+        */
+        scores.entrySet ().stream ().forEach (e -> {
+            genes.put (e.getKey (), 1.0 * e.getValue ());
+        });
         
         return genes;
     }

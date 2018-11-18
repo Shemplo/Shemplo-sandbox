@@ -70,7 +70,7 @@ public class RunTest {
         
         NormalizedMatrix matrix = dataset.getNormalizedMatrix ();
         SplitStrategy strategy = new AvDistanceStrategy ();
-        RandomForest forest = new RandomForest (matrix, strategy, dataset, 10, 301)
+        RandomForest forest = new RandomForest (matrix, strategy, dataset, 5, 301)
                             . train ();
         
         Map <Integer, List <Double>> testRows = new HashMap <> ();
@@ -144,9 +144,8 @@ public class RunTest {
         probs.keySet ().stream ()
                        . map (k -> Pair.mp (k, probs.get (k)))
                        . sorted ((pa, pb) -> -Double.compare (pa.S, pb.S))
-                       . map (p -> String.format (" - %12s %.12f", p.F, p.S))
+                       . map (p -> String.format (" - %12s %.1f", p.F, p.S))
                        . forEach (System.out::println);
-        
     }
     
     private static String convertLetterToDigit (String token) {

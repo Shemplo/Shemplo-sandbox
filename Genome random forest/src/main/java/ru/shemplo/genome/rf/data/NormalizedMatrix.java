@@ -5,6 +5,7 @@ import static ru.shemplo.snowball.utils.fun.StreamUtils.*;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Random;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -60,8 +61,8 @@ public class NormalizedMatrix {
         for (int i = 0; i < sub.length; i++) {
             System.arraycopy (matrix [vf + i], hf, sub [i], 0, ht - hf);
         }
-        List <String> subGenes = genesName.subList (vf, vt), 
-                subEntities = entitiesName.subList (hf, ht);
+        List <String> subGenes    = genesName.subList    (vf, vt), 
+                      subEntities = entitiesName.subList (hf, ht);
         
         return new NormalizedMatrix (subGenes, subEntities, sub, dataset);
     }
@@ -90,7 +91,7 @@ public class NormalizedMatrix {
             pairs = zip (genesName.stream (), Stream.iterate (0, i -> i + 1), 
                          Pair::mp)
                   . collect (Collectors.toList ());
-        Collections.shuffle (pairs);
+        Collections.shuffle (pairs, new Random ());
         List <String> genes = pairs.stream ().map (p -> p.F).collect (Collectors.toList ()), 
                       entities = new ArrayList <> (entitiesName);
         
@@ -125,6 +126,14 @@ public class NormalizedMatrix {
     
     public int getNumberOfGenes () {
         return genesName.size ();
+    }
+    
+    public int getRowOfGene (String gene) {
+        for (int i = 0; i < genesName.size (); i++) {
+            if (genesName.get (i).contains (gene)) { return i; }
+        }
+        
+        return -1;
     }
     
 }

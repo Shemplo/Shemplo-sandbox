@@ -22,6 +22,7 @@ import ru.shemplo.genome.rf.data.EntityVerdict;
 import ru.shemplo.genome.rf.data.NormalizedMatrix;
 import ru.shemplo.genome.rf.data.SourceDataset;
 import ru.shemplo.genome.rf.data.SourceEntity;
+import ru.shemplo.snowball.utils.Algorithms;
 
 public class DecisionTree {
     
@@ -54,7 +55,8 @@ public class DecisionTree {
         public boolean isSplittedEnough () {            
             double zeros = countNormalEntities () * 1.0;
             return (zeros / enities.size () >= 0.95) // 95% of entities are the same
-                || depth >= getMaxTreeDepth ();
+                || depth >= getMaxTreeDepth ()
+                || enities.size () == 1;
         }
         
         private int countNormalEntities () {
@@ -157,6 +159,33 @@ public class DecisionTree {
     
     public static final String nameOfMeta = "$numberOfLayers";
     public static int getMaxTreeDepth () { return 9; }
+    
+    public int getHeight () {
+        AtomicInteger height = new AtomicInteger ();
+        Algorithms.<Layer> runBFS (root, layer -> {
+            height.set (Math.max (height.get (), layer.getDepth () + 1));
+            return layer.getLeft () != null && layer.getRight () != null;
+        }, layer -> Arrays.asList (layer.getLeft (), layer.getRight ()));
+        
+        return height.get ();
+    }
+    
+    public Map <String, Integer> getGeneScores () {
+        Map <String, Integer> scores = new HashMap <> ();
+        final int treeHeight = getMaxTreeDepth ();
+        
+        Algorithms.<Layer> runBFS (root, layer -> {
+            final String gene = layer.getSplitGene ();
+            if (gene == null) { return false; }
+            
+            scores.putIfAbsent (gene, 0);
+            int score = treeHeight - layer.getDepth ();
+            scores.compute (gene, (k, v) -> v + score * score);
+            
+            return layer.getLeft () != null && layer.getRight () != null;
+        }, layer -> Arrays.asList (layer.getLeft (), layer.getRight ()));
+        return scores;
+    }
     
     public Map <String, Integer> getGenesOnDepth (int depth) {
         Map <String, Integer> counters = new HashMap <> ();

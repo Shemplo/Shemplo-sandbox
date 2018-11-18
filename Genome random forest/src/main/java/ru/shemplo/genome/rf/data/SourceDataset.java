@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 import lombok.Getter;
 import lombok.Setter;
@@ -63,10 +64,12 @@ public class SourceDataset {
         
         Set <String> genes = new HashSet <> (entitiesList.get (0).getGenes ());
         entitiesList.stream ().map (e -> e.getGenes ()).forEach (genes::retainAll);
-        List <String> entitiesName = new ArrayList <> (entitiesMap.keySet ()), 
+        List <String> entitiesName = entitiesMap.entrySet ().stream ()
+                                   . filter (e -> e.getValue ().getVerdict () != EntityVerdict.NEVUS)
+                                   . map (e -> e.getKey ()).collect (Collectors.toList ()), 
                       genesName = new ArrayList <> (genes);
         
-        double [][] matrix = new double [genes.size ()][getSize ()];
+        double [][] matrix = new double [genes.size ()][entitiesName.size ()];
         for (int i = 0; i < matrix.length; i++) {
             String geneName = genesName.get (i);
             for (int j = 0; j < matrix [i].length; j++) {
