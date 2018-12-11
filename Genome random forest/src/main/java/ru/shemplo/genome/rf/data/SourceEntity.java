@@ -10,8 +10,10 @@ import java.util.stream.Collectors;
 
 import lombok.Getter;
 import lombok.Setter;
+import lombok.ToString;
 import ru.shemplo.snowball.stuctures.Pair;
 
+@ToString
 public class SourceEntity {
 
     @Getter private final Map <String, Double> genesExpMap;
@@ -41,14 +43,14 @@ public class SourceEntity {
           . forEach (genesExpMap::remove);
         
         genesExpList = genesExpList.stream ()
-                . filter (p -> genesExpMap.containsKey (p.F))
-                . map (p -> Pair.mp (p.F + " (" + decoded.get (p.F) + ")", p.S))
+                . filter  (p -> genesExpMap.containsKey (p.F))
+                . map     (p -> Pair.mp (decoded.get (p.F), p.S))
                 . collect (Collectors.toList ());
         
         decoded.keySet ().stream ()
                .map (k -> Pair.mp (k, genesExpMap.get (k)))
                .peek    (p -> genesExpMap.remove (p.F))
-               .map     (p -> Pair.mp (p.F + " (" + decoded.get (p.F) + ")", p.S))
+               .map     (p -> Pair.mp (decoded.get (p.F), p.S))
                .forEach (p -> genesExpMap.put (p.F, p.S));
     }
     

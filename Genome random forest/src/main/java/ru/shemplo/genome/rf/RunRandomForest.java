@@ -1,24 +1,14 @@
 package ru.shemplo.genome.rf;
 
 import static java.util.Arrays.*;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.StringTokenizer;
-import java.util.stream.Collectors;
 
-import java.io.BufferedReader;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.Reader;
-
+import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import ru.shemplo.genome.rf.data.DataParser;
 import ru.shemplo.genome.rf.data.NormalizedMatrix;
@@ -28,6 +18,7 @@ import ru.shemplo.genome.rf.forest.AvDistanceStrategy;
 import ru.shemplo.genome.rf.forest.RandomForest;
 import ru.shemplo.genome.rf.forest.SplitStrategy;
 import ru.shemplo.snowball.stuctures.Pair;
+import ru.shemplo.snowball.utils.StringManip;
 import ru.shemplo.snowball.utils.fun.StreamUtils;
 
 public class RunRandomForest {
@@ -123,6 +114,48 @@ public class RunRandomForest {
                                  . collect (Collectors.toList ());
         int index = matrix.getRowOfGene ("KRT18");
         System.out.println (strategy.getDifference (list, matrix, index) [0]);
+        
+        
+        
+        System.out.println ("[] Saving united table with frequnces and scores");
+        Map <String, Pair <Double, Double>> metrics = new HashMap <> ();
+        baseFile = "/freqs.csv";
+        try (
+            InputStream is = RunRandomForest.class.getResourceAsStream (baseFile);
+            Reader r = new InputStreamReader (is, StandardCharsets.UTF_8);
+            BufferedReader br = new BufferedReader (r);
+        ) {
+            br.readLine (); // Skip titles line
+            
+            String line = null;
+            while ((line = StringManip.fetchNonEmptyLine (br)) != null) {
+                final String [] split = line.split (",");
+                double value = Double.parseDouble (split [1]);
+                metrics.putIfAbsent (split [0], Pair.mp (value, 0d));
+            }
+        }
+        
+        probs.keySet ().stream ()
+        . map     (k -> Pair.mp (k, probs.get (k)))
+        . forEach (p -> {
+            String name = "\"" + p.F.substring (p.F.indexOf ("(") + 1, p.F.length () - 1) + "\"";
+            metrics.computeIfPresent (name, (k, v) -> Pair.mp (v.F, p.S));
+        });
+        
+        Path writeFile = Paths.get ("results/table.csv");
+        try (
+            BufferedWriter bw = Files.newBufferedWriter (writeFile);
+            PrintWriter pw = new PrintWriter (bw);
+        ) {
+            pw.println ("Gene, Probability, Score");
+            
+            metrics.entrySet ().stream ()
+            . map     (Pair::fromMapEntry)
+            . sorted  ((a, b) -> -Double.compare (a.S.F, b.S.F))
+            . forEach (p -> {
+                pw.println (String.format (Locale.ENGLISH, "%s,%f,%f\t", p.F, p.S.F, p.S.S));
+            });
+        }
     }
     
 }
