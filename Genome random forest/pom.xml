@@ -100,5 +100,10 @@
       <version>1.18.4</version>
       <scope>provided</scope>
     </dependency>
+    <dependency>
+      <groupId>ru.shemplo</groupId>
+      <artifactId>snowball</artifactId>
+      <version>0.0.1</version>
+    </dependency>
   </dependencies>
 </project>
