@@ -18,17 +18,17 @@ public class RunCsvComposer {
         values = new HashMap <> ();
     
     public static void main (String [] args) throws Exception {
-        readFile ("freqs.csv", ",");
         readFile ("sklearn-60.txt", " ");
         readFile ("sklearn-90.txt", " ");
         readFile ("sklearn-150.txt", " ");
         readFile ("sklearn-250.txt", " ");
+        readFile ("freqs.csv", ",");
         
         Path path = Paths.get ("results", "table.csv");
         try (
             PrintWriter pw = new PrintWriter (path.toFile ());
         ) {
-            pw.println ("id,gene,mcmc,rf60,rf90,rf150,rf250");
+            pw.println ("id,gene,rf60,rf90,rf150,rf250,mcmc");
             
             AtomicInteger counter = new AtomicInteger ();
             values.entrySet ().stream ()

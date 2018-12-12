@@ -15,9 +15,12 @@ import ru.shemplo.genome.rf.data.DataParser;
 import ru.shemplo.genome.rf.data.EntityVerdict;
 import ru.shemplo.genome.rf.data.SourceDataset;
 import ru.shemplo.snowball.stuctures.Pair;
+import ru.shemplo.snowball.utils.StringManip;
 import ru.shemplo.snowball.utils.fun.StreamUtils;
 
 public class RunCsvConverter {
+    
+    private static boolean useFreqs = true;
     
     public static void main (String ... args) throws Exception { 
         Path path = Paths.get ("GSE3189_series_matrix.txt");
@@ -72,6 +75,33 @@ public class RunCsvConverter {
             = decodedNames.entrySet ().stream ().map (Pair::fromMapEntry)
             . filter  (p -> mentionedNames.contains (p.S))
             . collect (Collectors.toMap (p -> p.F, p -> p.S));
+        Map <String, String> reverse = restrictedNames.entrySet ().stream ()
+                                     . map     (Pair::fromMapEntry)
+                                     . collect (Collectors.toMap (Pair::getS, Pair::getF));
+        
+        if (useFreqs) {
+            Map <String, String> top100 = new HashMap <> ();
+            path = Paths.get ("temp", "freqs.csv");
+            try (
+                BufferedReader br = Files.newBufferedReader (path);
+            ) {
+                br.readLine (); // skip headers
+                
+                String line = null; int counter = 0;
+                while ((line = StringManip.fetchNonEmptyLine (br)) != null
+                        && counter < 200) {
+                    final String [] vals = line.split (",");
+                    vals [0] = vals [0].replace ("\"", "");
+                    
+                    top100.put (reverse.get (vals [0]), vals [0]);
+                    counter += 1;
+                }
+            }
+            
+            restrictedNames.clear ();
+            restrictedNames.putAll (top100);
+        }
+        
         Map <String, Integer> positions 
             = StreamUtils.zip (restrictedNames.keySet ().stream (), 
                                Stream.iterate (0, i -> i + 1), Pair::mp)
