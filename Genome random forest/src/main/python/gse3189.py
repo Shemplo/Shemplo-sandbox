@@ -8,11 +8,14 @@ from sklearn.model_selection import train_test_split, RandomizedSearchCV
 from sklearn.metrics import accuracy_score, make_scorer
 from sklearn.svm import SVC, LinearSVC
 
-train_input = pd.read_csv ("./input/train.csv", index_col = 0)
+train_input = pd.read_csv ("../../../results/train.csv", index_col = 0)
 
 feature_names = train_input.columns.values
 train_data    = train_input.values [:, :7504]
 train_target  = train_input.values [:, -1]
+
+train_data, test_data, train_target, test_target =\
+	train_test_split (train_data, train_target, test_size = 0.7)
 
 estimators = 60 # run parameter
 forest = RandomForestClassifier (n_estimators=estimators,
@@ -20,7 +23,7 @@ forest = RandomForestClassifier (n_estimators=estimators,
 forest.fit (train_data, train_target)
 
 scorer = make_scorer (accuracy_score)
-scores = scorer (forest, train_data, train_target)
+scores = scorer (forest, test_data, test_target)
 print "Match score: %f" % scores 
 
 importances = forest.feature_importances_

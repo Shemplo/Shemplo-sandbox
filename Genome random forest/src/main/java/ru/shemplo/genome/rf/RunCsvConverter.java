@@ -20,7 +20,13 @@ import ru.shemplo.snowball.utils.fun.StreamUtils;
 
 public class RunCsvConverter {
     
-    private static boolean useFreqs = true;
+    private static final int N = 100;
+    
+    private static enum Action {
+        NO_ACTION, TOP_N_MCMC, TOP_N_PVAL, RANDOM_N
+    }
+    
+    private static Action action = Action.TOP_N_MCMC;
     
     public static void main (String ... args) throws Exception { 
         Path path = Paths.get ("GSE3189_series_matrix.txt");
@@ -32,6 +38,7 @@ public class RunCsvConverter {
         }
         
         final Map <String, String> decodedNames = new HashMap <> ();
+        final Map <String, Double> pvalues = new HashMap <> ();
         String baseFile = "/de.csv";
         try (
             InputStream is = RunRandomForest.class.getResourceAsStream (baseFile);
@@ -45,8 +52,13 @@ public class RunCsvConverter {
                 if (line.length () == 0) { continue; }
                 
                 List <String> tokens = Arrays.asList (line.split ("\",\""));
-                decodedNames.put (tokens.get (2), tokens.get (4)); 
-                //                           ID / Gene.symbol
+                final String id = tokens.get (2);
+                decodedNames.put (id, tokens.get (4)); 
+                //                ID / Gene.symbol
+                tokens = Arrays.asList (line.split (","));
+                String value = tokens.get (tokens.size () - 3);
+                pvalues.put (id, Double.parseDouble (value));
+                //           ID / pval
             }
         }
         
@@ -79,7 +91,7 @@ public class RunCsvConverter {
                                      . map     (Pair::fromMapEntry)
                                      . collect (Collectors.toMap (Pair::getS, Pair::getF));
         
-        if (useFreqs) {
+        if (action == Action.TOP_N_MCMC) {
             Map <String, String> top100 = new HashMap <> ();
             path = Paths.get ("temp", "freqs.csv");
             try (
@@ -89,7 +101,7 @@ public class RunCsvConverter {
                 
                 String line = null; int counter = 0;
                 while ((line = StringManip.fetchNonEmptyLine (br)) != null
-                        && counter < 200) {
+                        && counter < N) {
                     final String [] vals = line.split (",");
                     vals [0] = vals [0].replace ("\"", "");
                     
@@ -100,6 +112,23 @@ public class RunCsvConverter {
             
             restrictedNames.clear ();
             restrictedNames.putAll (top100);
+        } else if (action == Action.TOP_N_PVAL) {
+            Map <String, String> top100 = pvalues.entrySet ().stream ()
+                                        . map     (Pair::fromMapEntry)
+                                        . sorted  ((a, b) -> Double.compare (a.S, b.S))
+                                        . limit   (N)
+                                        . map     (p -> p.applyS (__ -> decodedNames.get (p.F)))
+                                        . collect (Collectors.toMap (Pair::getF, Pair::getS));
+            restrictedNames.clear ();
+            restrictedNames.putAll (top100);
+        } else if (action == Action.RANDOM_N) {
+            List <String> ids = new ArrayList <> (decodedNames.keySet ());
+            Collections.shuffle (ids);
+            restrictedNames.clear ();
+            
+            ids.stream ().limit (N).forEach (id -> {
+                restrictedNames.put (id, decodedNames.get (id));
+            });
         }
         
         Map <String, Integer> positions 
