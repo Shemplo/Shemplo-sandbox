@@ -20,13 +20,13 @@ import ru.shemplo.snowball.utils.fun.StreamUtils;
 
 public class RunCsvConverter {
     
-    private static final int N = 100;
+    private static final int N = 20;
     
     private static enum Action {
         NO_ACTION, TOP_N_MCMC, TOP_N_PVAL, RANDOM_N
     }
     
-    private static Action action = Action.TOP_N_MCMC;
+    private static Action action = Action.RANDOM_N;
     
     public static void main (String ... args) throws Exception { 
         Path path = Paths.get ("GSE3189_series_matrix.txt");

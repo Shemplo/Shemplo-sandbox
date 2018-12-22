@@ -1,5 +1,6 @@
 import numpy  as np
 import pandas as pd
+import sys
 
 from sklearn.feature_selection import chi2, f_classif, mutual_info_classif
 from sklearn.ensemble  import RandomForestClassifier, ExtraTreesClassifier
@@ -14,6 +15,7 @@ feature_names = train_input.columns.values
 train_data    = train_input.values [:, :7504]
 train_target  = train_input.values [:, -1]
 
+np.random.seed (163 + int(sys.argv [1]))
 train_data, test_data, train_target, test_target =\
 	train_test_split (train_data, train_target, test_size = 0.7)
 
