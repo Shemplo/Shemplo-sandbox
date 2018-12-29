@@ -9,15 +9,29 @@ from sklearn.model_selection import train_test_split, RandomizedSearchCV
 from sklearn.metrics import accuracy_score, make_scorer
 from sklearn.svm import SVC, LinearSVC
 
-train_input = pd.read_csv ("../../../results/train.csv", index_col = 0)
+train_input = pd.read_csv ("../../../results/train.csv", index_col = 0, sep = ";")
 
 feature_names = train_input.columns.values
-train_data    = train_input.values [:, :7504]
+train_data    = train_input.values [:, :20]
 train_target  = train_input.values [:, -1]
 
-np.random.seed (163 + int(sys.argv [1]))
+train_data = pd.DataFrame (train_data)
+train_target = pd.Series (train_target)
+
+np.random.seed (163 + int (sys.argv [1]))
 train_data, test_data, train_target, test_target =\
 	train_test_split (train_data, train_target, test_size = 0.7)
+
+# 17 -> 18 in tarin.csv
+# 18 -> 19 in train.csv
+print train_data
+for i in train_target.index:
+	print "%d" % (i)
+output = open ("trainset.csv", 'w')
+output.write ("geo_access\n")
+for i in train_target.index:
+	output.write ("%s\n" % train_input.iloc [i].name)
+output.close ()
 
 estimators = 60 # run parameter
 forest = RandomForestClassifier (n_estimators=estimators,

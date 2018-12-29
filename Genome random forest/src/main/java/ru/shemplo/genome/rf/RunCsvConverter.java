@@ -22,11 +22,11 @@ public class RunCsvConverter {
     
     private static final int N = 20;
     
-    private static enum Action {
+    public static enum Action {
         NO_ACTION, TOP_N_MCMC, TOP_N_PVAL, RANDOM_N
     }
     
-    private static Action action = Action.RANDOM_N;
+    public static Action action = Action.RANDOM_N;
     
     public static void main (String ... args) throws Exception { 
         Path path = Paths.get ("GSE3189_series_matrix.txt");
@@ -140,8 +140,8 @@ public class RunCsvConverter {
         try (
             PrintWriter pw = new PrintWriter (baseFile, StandardCharsets.UTF_8.name ());
         ) {
-            StringJoiner sj = new StringJoiner (",");
-            sj.add ("id");
+            StringJoiner sj = new StringJoiner (";");
+            sj.add ("geo_access");
             positions.entrySet ().stream ()
             . map     (Pair::fromMapEntry)
             . sorted  ((a, b) -> Integer.compare (positions.get (a.F), 
@@ -158,18 +158,20 @@ public class RunCsvConverter {
                           . map     (dataset::getEntityByIndex)
                           . map     (e -> Pair.mp (e.getGenesExpMap (), e.getVerdict ()))
                           . map     (p -> Pair.mp (p.F.entrySet ().stream ()
-                                                      . map     (Pair::fromMapEntry)
-                                                      . filter  (pp -> restrictedNames.containsKey (pp.F))
-                                                      . sorted  ((a, b) -> Integer.compare (positions.get (a.F), 
-                                                                                            positions.get (b.F)))
-                                                      . map     (pp -> pp.applyF (restrictedNames::get))
-                                                      . collect (Collectors.toList ()), 
-                                                      p.S))
+                              . map     (Pair::fromMapEntry)
+                              . filter  (pp -> restrictedNames.containsKey (pp.F))
+                              . sorted  ((a, b) -> Integer.compare (positions.get (a.F), 
+                                                                    positions.get (b.F)))
+                              . map     (pp -> pp.applyF (restrictedNames::get))
+                              . collect (Collectors.toList ()), 
+                              p.S))
                           . filter  (p -> !EntityVerdict.NORMAL.equals (p.S))
                           . collect (Collectors.toList ());
+            final int shift = dataset.getSize () - selection.size ();
             for (int i = 0; i < selection.size (); i++) {
-                sj = new StringJoiner (",");
-                sj.add ("" + (i + 1));
+                sj = new StringJoiner (";");
+                sj.add (dataset.getEntityByIndex (i + shift)
+                        . getGeoAccess ());
                 selection.get (i).F.stream ()
                 . map     (Pair::getS)
                 . map     (Object::toString)
