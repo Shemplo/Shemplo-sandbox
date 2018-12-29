@@ -18,29 +18,30 @@ public class RunCsvComposer {
         values = new HashMap <> ();
     
     public static void main (String [] args) throws Exception {
+        readFile ("freqs.csv", ";");
         readFile ("sklearn-60.txt", " ");
         readFile ("sklearn-90.txt", " ");
         readFile ("sklearn-150.txt", " ");
         readFile ("sklearn-250.txt", " ");
-        readFile ("freqs.csv", ",");
         
-        Path path = Paths.get ("results", "table.csv");
+        String destination = args.length > 0 ? "-".concat (args [0]) : "";
+        Path path = Paths.get ("results", String.format ("table%s.csv", destination));
         try (
             PrintWriter pw = new PrintWriter (path.toFile ());
         ) {
-            pw.println ("id,gene,rf60,rf90,rf150,rf250,mcmc");
+            pw.println ("id;gene;mcmc;rf60;rf90;rf150;rf250");
             
             AtomicInteger counter = new AtomicInteger ();
             values.entrySet ().stream ()
             . map     (Pair::fromMapEntry)
             . forEach (p -> {
-                StringJoiner sj = new StringJoiner (",");
+                StringJoiner sj = new StringJoiner (";");
                 sj.add ("" + counter.incrementAndGet ());
                 sj.add (p.F);
                 
                 p.S.stream ()
-                . map     (Objects::toString)
-                . forEach (sj::add);
+                . map      (Objects::toString)
+                . forEach  (sj::add);
                 pw.println (sj.toString ());
             });
         }
@@ -48,6 +49,7 @@ public class RunCsvComposer {
     
     private static void readFile (String fileName, String separator) throws IOException {
         Path path = Paths.get ("temp", fileName);
+        System.out.println (fileName + " " + Files.exists (path));
         try (
             BufferedReader br = Files.newBufferedReader (path);
         ) {
@@ -61,6 +63,8 @@ public class RunCsvComposer {
                 values.putIfAbsent (vals [0], new ArrayList <> ());
                 values.get (vals [0]).add (Double.parseDouble (vals [1]));
             }
+            
+            System.out.println (values.size ());
         }
     }
     

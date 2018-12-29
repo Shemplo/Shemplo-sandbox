@@ -45,7 +45,7 @@ V(g)$pval <- de[match(V(g)$name, Gene.symbol), pval]
 
 library (mcmcRanking)
 g <- set_likelihood (g, 1e-7)
-x <- mcmc_sample(g, subgraph_order = 200, times = 1000, niter = 100000)
+x <- mcmc_sample(g, subgraph_order = 200, times = 10, niter = 100000)
 freq <- get_frequency(x, prob = TRUE)
 #write.csv(sort (freq, decreasing = TRUE), file = "freqs.csv")
 freq <- sort (freq, decreasing = TRUE)

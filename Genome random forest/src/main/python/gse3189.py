@@ -24,16 +24,18 @@ train_data, test_data, train_target, test_target =\
 
 # 17 -> 18 in tarin.csv
 # 18 -> 19 in train.csv
+"""
 print train_data
 for i in train_target.index:
 	print "%d" % (i)
+"""
 output = open ("trainset.csv", 'w')
 output.write ("geo_access\n")
 for i in train_target.index:
 	output.write ("%s\n" % train_input.iloc [i].name)
 output.close ()
 
-estimators = 60 # run parameter
+estimators = int (sys.argv [2]) # run parameter
 forest = RandomForestClassifier (n_estimators=estimators,
                                  random_state=0)
 forest.fit (train_data, train_target)
