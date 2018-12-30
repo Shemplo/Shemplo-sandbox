@@ -11,9 +11,13 @@ public class RunPipeline {
     public static final int [] ESTIMATORS = {60, 90, 150, 250};
     
     public static void main (String ... args) throws Exception {
-        for (int i = 0; i < 2; i++) {
-            RunCsvConverter.action = Action.TOP_N_MCMC;
-            //RunCsvConverter.main ();
+        RunCsvConverter.action = Action.TOP_N_MCMC;
+        RunCsvConverter.N      = 20;
+        RunCsvConverter.main ();
+        
+        for (int i = 0; i < 1; i++) {
+            System.out.println (String.format ("Run (act: %s, n: %d) is prepared", 
+                                      RunCsvConverter.action, RunCsvConverter.N));
             
             for (int estimators : ESTIMATORS) {                
                 String command = String.format ("cmd /C bash -c \""

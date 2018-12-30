@@ -24,7 +24,7 @@ public class RunCsvComposer {
         readFile ("sklearn-150.txt", " ");
         readFile ("sklearn-250.txt", " ");
         
-        String destination = args.length > 0 ? "-".concat (args [0]) : "";
+        String destination = args.length > 0 ? "-run-".concat (args [0]) : "";
         Path path = Paths.get ("results", String.format ("table%s.csv", destination));
         try (
             PrintWriter pw = new PrintWriter (path.toFile ());
@@ -45,26 +45,33 @@ public class RunCsvComposer {
                 pw.println (sj.toString ());
             });
         }
+        
+        values.clear ();
     }
     
     private static void readFile (String fileName, String separator) throws IOException {
         Path path = Paths.get ("temp", fileName);
-        System.out.println (fileName + " " + Files.exists (path));
         try (
             BufferedReader br = Files.newBufferedReader (path);
         ) {
             br.readLine (); // skip headers
             
-            String line = null;
+            String line = null; int maxSize = 0;
             while ((line = StringManip.fetchNonEmptyLine (br)) != null) {
                 final String [] vals = line.split (separator);
                 vals [0] = vals [0].replace ("\"", "");
                 
                 values.putIfAbsent (vals [0], new ArrayList <> ());
                 values.get (vals [0]).add (Double.parseDouble (vals [1]));
+                maxSize = Math.max (maxSize, values.get (vals [0]).size ());
             }
             
-            System.out.println (values.size ());
+            final int finalSize = maxSize;
+            values.values ().forEach (list -> {
+                while (list.size () != finalSize) {
+                    list.add (0.0);
+                }
+            });
         }
     }
     

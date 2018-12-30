@@ -20,13 +20,13 @@ import ru.shemplo.snowball.utils.fun.StreamUtils;
 
 public class RunCsvConverter {
     
-    private static final int N = 20;
     
     public static enum Action {
         NO_ACTION, TOP_N_MCMC, TOP_N_PVAL, RANDOM_N
     }
     
     public static Action action = Action.RANDOM_N;
+    public static int    N      = 20;
     
     public static void main (String ... args) throws Exception { 
         Path path = Paths.get ("GSE3189_series_matrix.txt");
@@ -102,7 +102,7 @@ public class RunCsvConverter {
                 String line = null; int counter = 0;
                 while ((line = StringManip.fetchNonEmptyLine (br)) != null
                         && counter < N) {
-                    final String [] vals = line.split (",");
+                    final String [] vals = line.split (";");
                     vals [0] = vals [0].replace ("\"", "");
                     
                     top100.put (reverse.get (vals [0]), vals [0]);
