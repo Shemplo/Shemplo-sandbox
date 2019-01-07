@@ -24,7 +24,7 @@ public class RunCsvComposer {
         readFile ("sklearn-150.txt", " ");
         readFile ("sklearn-250.txt", " ");
         
-        String destination = args.length > 0 ? "-run-".concat (args [0]) : "";
+        String destination = args.length > 0 ? String.format ("-run-%s-%s", args [1], args [0]) : "";
         Path path = Paths.get ("results", String.format ("table%s.csv", destination));
         try (
             PrintWriter pw = new PrintWriter (path.toFile ());

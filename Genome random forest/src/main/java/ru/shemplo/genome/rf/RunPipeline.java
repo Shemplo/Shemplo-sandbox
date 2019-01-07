@@ -11,11 +11,11 @@ public class RunPipeline {
     public static final int [] ESTIMATORS = {60, 90, 150, 250};
     
     public static void main (String ... args) throws Exception {
-        RunCsvConverter.action = Action.TOP_N_MCMC;
-        RunCsvConverter.N      = 20;
-        RunCsvConverter.main ();
-        
-        for (int i = 0; i < 1; i++) {
+        for (int i = 0; i < 2; i++) {
+            RunCsvConverter.action = Action.values () [(i % 2 + 1) * 2 - 1];
+            RunCsvConverter.N      = 20;
+            RunCsvConverter.main ();
+            
             System.out.println (String.format ("Run (act: %s, n: %d) is prepared", 
                                       RunCsvConverter.action, RunCsvConverter.N));
             
@@ -60,7 +60,7 @@ public class RunPipeline {
             }
             Files.copy (freqsFrom, freqsTo);
             
-            RunCsvComposer.main (new String [] {"" + i});
+            RunCsvComposer.main (new String [] {"" + i, RunCsvConverter.action.name ()});
             System.out.println (String.format ("%3d Composition of results done", i));
         }
     }
