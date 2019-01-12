@@ -1,8 +1,14 @@
 package ru.shemplo.genome.rf;
 
+import static ru.shemplo.genome.rf.RunCsvConverter.*;
+
+import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
 
 import ru.shemplo.genome.rf.RunCsvConverter.Action;
 
@@ -10,9 +16,14 @@ public class RunPipeline {
     
     public static final int [] ESTIMATORS = {60, 90, 150, 250};
     
+    public static final int RUNS = 100;
+    
     public static void main (String ... args) throws Exception {
-        for (int i = 0; i < 2; i++) {
-            RunCsvConverter.action = Action.values () [(i % 2 + 1) * 2 - 1];
+        List <Double> results = new ArrayList <> ();
+        Locale.setDefault (Locale.ENGLISH);
+        
+        for (int i = 0; i < RUNS * 2; i++) {
+            RunCsvConverter.action = Action.values () [1 + i % 2];
             RunCsvConverter.N      = 20;
             RunCsvConverter.main ();
             
@@ -60,9 +71,24 @@ public class RunPipeline {
             }
             Files.copy (freqsFrom, freqsTo);
             
-            RunCsvComposer.main (new String [] {"" + i, RunCsvConverter.action.name ()});
+            double result = RunCsvComposer.mainR (new String [] {"" + i, action.name ()});
             System.out.println (String.format ("%3d Composition of results done", i));
+            results.add (result);
         }
+        
+        Path path = Paths.get ("results/MCMCvsPVAL.csv");
+        try (
+            PrintWriter pw = new PrintWriter (path.toFile ());
+        ) {
+            pw.println ("iteration;by MCMC;by P-value");
+            
+            for (int i = 0; i < RUNS; i++) {
+                pw.println (String.format ("%d;%f;%f", i, results.get (i * 2), 
+                                                    results.get (i * 2 + 1)));
+            }
+        }
+        
+        System.out.println (String.format ("Comparing table written"));
     }
     
 }

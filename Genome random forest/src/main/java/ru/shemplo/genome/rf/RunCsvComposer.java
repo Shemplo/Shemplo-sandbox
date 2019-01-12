@@ -8,6 +8,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import ru.shemplo.snowball.stuctures.Pair;
 import ru.shemplo.snowball.utils.StringManip;
@@ -17,12 +18,32 @@ public class RunCsvComposer {
     private static final Map <String, List <Double>> 
         values = new HashMap <> ();
     
-    public static void main (String [] args) throws Exception {
-        readFile ("freqs.csv", ";");
-        readFile ("sklearn-60.txt", " ");
-        readFile ("sklearn-90.txt", " ");
-        readFile ("sklearn-150.txt", " ");
-        readFile ("sklearn-250.txt", " ");
+    private static final String [][] files = {
+        {"freqs.csv",       ";"},
+        {"sklearn-60.txt",  " "},
+        {"sklearn-90.txt",  " "},
+        {"sklearn-150.txt", " "},
+        {"sklearn-250.txt", " "},
+    };
+    
+    public static void main (String [] args) throws Exception { mainR (args); }
+    
+    public static double mainR (String [] args) throws Exception {
+        for (String [] file : files) {
+            readFile (file [0], file [1]);
+        }
+        
+        double [] maxes = new double [files.length];
+        values.values ().forEach (lst -> {
+            for (int i = 0; i < lst.size (); i++) {
+                maxes [i] = Math.max (maxes [i], lst.get (i));
+            }
+        });
+        values.values ().forEach (lst -> {
+            for (int i = 0; i < lst.size (); i++) {
+                lst.set (i, lst.get (i) / (maxes [i] != 0 ? maxes [i] : 1.0));
+            }
+        });
         
         String destination = args.length > 0 ? String.format ("-run-%s-%s", args [1], args [0]) : "";
         Path path = Paths.get ("results", String.format ("table%s.csv", destination));
@@ -46,7 +67,14 @@ public class RunCsvComposer {
             });
         }
         
+        AtomicReference <Double> distance = new AtomicReference <> (0D);
+        values.values ().forEach (lst -> {
+            double abs  = Math.abs (lst.get (0) - lst.get (1));
+            distance.getAndAccumulate (abs * abs, Double::sum);
+        });
+        
         values.clear ();
+        return distance.get ();
     }
     
     private static void readFile (String fileName, String separator) throws IOException {
