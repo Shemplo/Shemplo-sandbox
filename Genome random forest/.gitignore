@@ -18,4 +18,6 @@ properties*
 *.iml
 
 /*.txt
-**/data/**
+**/data
+
+results/table-run-*
