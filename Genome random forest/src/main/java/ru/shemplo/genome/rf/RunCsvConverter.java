@@ -92,7 +92,7 @@ public class RunCsvConverter {
                                      . collect (Collectors.toMap (Pair::getS, Pair::getF));
         
         if (action == Action.TOP_N_MCMC) {
-            Map <String, String> top100 = new HashMap <> ();
+            Map <String, String> topN = new HashMap <> ();
             path = Paths.get ("temp", "freqs.csv");
             try (
                 BufferedReader br = Files.newBufferedReader (path);
@@ -105,22 +105,22 @@ public class RunCsvConverter {
                     final String [] vals = line.split (";");
                     vals [0] = vals [0].replace ("\"", "");
                     
-                    top100.put (reverse.get (vals [0]), vals [0]);
+                    topN.put (reverse.get (vals [0]), vals [0]);
                     counter += 1;
                 }
             }
             
             restrictedNames.clear ();
-            restrictedNames.putAll (top100);
+            restrictedNames.putAll (topN);
         } else if (action == Action.TOP_N_PVAL) {
-            Map <String, String> top100 = pvalues.entrySet ().stream ()
-                                        . map     (Pair::fromMapEntry)
-                                        . sorted  ((a, b) -> Double.compare (a.S, b.S))
-                                        . limit   (N)
-                                        . map     (p -> p.applyS (__ -> decodedNames.get (p.F)))
-                                        . collect (Collectors.toMap (Pair::getF, Pair::getS));
+            Map <String, String> topN = pvalues.entrySet ().stream ()
+                                      . map     (Pair::fromMapEntry)
+                                      . sorted  ((a, b) -> Double.compare (a.S, b.S))
+                                      . limit   (N)
+                                      . map     (p -> p.applyS (__ -> decodedNames.get (p.F)))
+                                      . collect (Collectors.toMap (Pair::getF, Pair::getS));
             restrictedNames.clear ();
-            restrictedNames.putAll (top100);
+            restrictedNames.putAll (topN);
         } else if (action == Action.RANDOM_N) {
             List <String> ids = new ArrayList <> (decodedNames.keySet ());
             Collections.shuffle (ids);
@@ -136,7 +136,7 @@ public class RunCsvConverter {
                                Stream.iterate (0, i -> i + 1), Pair::mp)
             . collect (Collectors.toMap (Pair::getF, Pair::getS));
         
-        baseFile = "results/train.csv";
+        baseFile = "temp/train.csv";
         try (
             PrintWriter pw = new PrintWriter (baseFile, StandardCharsets.UTF_8.name ());
         ) {

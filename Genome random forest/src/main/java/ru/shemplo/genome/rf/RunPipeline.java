@@ -65,7 +65,7 @@ public class RunPipeline {
             System.out.println (String.format ("%3d MCMC done", i));
             
             Path freqsFrom = Paths.get ("src/main/r/freqs.csv"),
-                    freqsTo   = Paths.get ("temp/freqs.csv");
+                 freqsTo   = Paths.get ("temp/freqs.csv");
             if (Files.exists (freqsTo)) {
                 Files.delete (freqsTo);
             }
