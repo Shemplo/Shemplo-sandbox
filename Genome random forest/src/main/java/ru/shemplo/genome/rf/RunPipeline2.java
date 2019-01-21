@@ -1,5 +1,6 @@
 package ru.shemplo.genome.rf;
 
+import static ru.shemplo.genome.rf.external.PythonRunner.*;
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -38,7 +39,7 @@ public class RunPipeline2 {
         
         for (int i = 0; i < RUNS; i++) {
             for (int estimators : ESTIMATORS) {
-                runPython (String.format ("python splitter.py %d %d", i, estimators));
+                runPython (String.format ("python splitter.py %d %d 0.7", i, estimators));
                 System.out.println (String.format ("%3d Set splitted (est: %d)", 
                                     i, estimators));
                 
@@ -74,7 +75,7 @@ public class RunPipeline2 {
                 RunTopNExtractor.action = Action.TOP_N_MCMC;
                 RunTopNExtractor.makeTrainSet (dataset);
                 
-                runPython (String.format ("python gse3189.py %d %d", i, estimators));
+                runPython (String.format ("python gse3189.py %d %d 0.7", i, estimators));
                 double scoresM = readTreeScore (estimators);
                 
                 System.out.println (String.format ("%3d MCMC score %f", i, scoresM));
@@ -84,7 +85,7 @@ public class RunPipeline2 {
                 RunTopNExtractor.action = Action.TOP_N_PVAL;
                 RunTopNExtractor.makeTrainSet (dataset);
                 
-                runPython (String.format ("python gse3189.py %d %d", i, estimators));
+                runPython (String.format ("python gse3189.py %d %d 0.7", i, estimators));
                 double scoresP = readTreeScore (estimators);
                 
                 System.out.println (String.format ("%3d PVal score %f", i, scoresP));
@@ -98,38 +99,6 @@ public class RunPipeline2 {
             
             System.out.println (String.format ("[] Iteration %d finished", i));
         }
-    }
-    
-    private static void runPython (String command) throws Exception {
-        command = String.format ("cmd /C bash -c \""
-                + "cd src/main/python; %s\"", command);
-        Process process = Runtime.getRuntime ().exec (command);
-        
-        /*
-        try (
-            InputStream is = process.getInputStream ();
-            Reader r = new InputStreamReader (is);
-            BufferedReader br = new BufferedReader (r);
-        ) {
-            String line = null;
-            while ((line = br.readLine ()) != null) {
-                System.out.println (line);
-            }
-        }
-        
-        try (
-            InputStream is = process.getErrorStream ();
-            Reader r = new InputStreamReader (is);
-            BufferedReader br = new BufferedReader (r);
-        ) {
-            String line = null;
-            while ((line = br.readLine ()) != null) {
-                System.out.println (line);
-            }
-        }
-        */
-        
-        process.waitFor ();
     }
     
     private static double readTreeScore (int estimators) throws Exception {
