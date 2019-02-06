@@ -1,6 +1,7 @@
 package ru.shemplo.genome.rf;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -45,50 +46,12 @@ public class RunTopNExtractor {
     
     private static void makeMCMCTrainSet (SourceDataset dataset, 
             List <Pair <String, Integer>> people) throws Exception {
-        List <Trio <String, String, Double>> genes = new ArrayList <> ();
-        //filterPeople (people);
-        
-        Path path = Paths.get ("temp", "freqs.csv");
-        try (
-            BufferedReader br = Files.newBufferedReader (path);
-        ) {
-            br.readLine (); // Header line
-            
-            String line = null;
-            while ((line = StringManip.fetchNonEmptyLine (br)) != null) {
-                final String tokens [] = line.split (";");
-                
-                final double value = Double.parseDouble (tokens [2]);
-                genes.add (Trio.mt (tokens [0], tokens [1], value));
-            }
-        }
-        
-        genes.sort ((a, b) -> -Double.compare (a.T, b.T));
-        writeMatrixToFile (dataset, people, genes);
+        writeMatrixToFile (dataset, people, getSortedAfterMCMC ());
     }
     
     private static void makePValTrainSet (SourceDataset dataset, 
             List <Pair <String, Integer>> people) throws Exception {
-        List <Trio <String, String, Double>> genes = new ArrayList <> ();
-        //filterPeople (people);
-        
-        Path path = Paths.get ("temp", "pvals.csv");
-        try (
-            BufferedReader br = Files.newBufferedReader (path);
-        ) {
-            br.readLine (); // Header line
-            
-            String line = null;
-            while ((line = StringManip.fetchNonEmptyLine (br)) != null) {
-                final String tokens [] = line.split (";");
-                
-                final double value = Double.parseDouble (tokens [2]);
-                genes.add (Trio.mt (tokens [0], tokens [1], value));
-            }
-        }
-        
-        genes.sort ((a, b) -> Double.compare (a.T, b.T));
-        writeMatrixToFile (dataset, people, genes);
+        writeMatrixToFile (dataset, people, getSortedByPValue ());
     }
     
     @SuppressWarnings ("unused")
@@ -144,6 +107,54 @@ public class RunTopNExtractor {
                 pw.println (sj.toString ());
             }
         }
+    }
+    
+    public static List <Trio <String, String, Double>> getSortedAfterMCMC () 
+            throws IOException {
+        List <Trio <String, String, Double>> genes = new ArrayList <> ();
+        
+        Path path = Paths.get ("temp", "freqs.csv");
+        try (
+            BufferedReader br = Files.newBufferedReader (path);
+        ) {
+            br.readLine (); // Header line
+            
+            String line = null;
+            while ((line = StringManip.fetchNonEmptyLine (br)) != null) {
+                final String tokens [] = line.split (";");
+                
+                final double value = Double.parseDouble (tokens [2]);
+                genes.add (Trio.mt (tokens [0], tokens [1], value));
+            }
+        }
+        
+        Files.delete (path);
+        genes.sort ((a, b) -> -Double.compare (a.T, b.T));
+        return genes;
+    }
+    
+    public static List <Trio <String, String, Double>> getSortedByPValue () 
+            throws IOException {
+        List <Trio <String, String, Double>> genes = new ArrayList <> ();
+        
+        Path path = Paths.get ("temp", "pvals.csv");
+        try (
+            BufferedReader br = Files.newBufferedReader (path);
+        ) {
+            br.readLine (); // Header line
+            
+            String line = null;
+            while ((line = StringManip.fetchNonEmptyLine (br)) != null) {
+                final String tokens [] = line.split (";");
+                
+                final double value = Double.parseDouble (tokens [2]);
+                genes.add (Trio.mt (tokens [0], tokens [1], value));
+            }
+        }
+        
+        Files.delete (path);
+        genes.sort ((a, b) -> Double.compare (a.T, b.T));
+        return genes;
     }
     
 }

@@ -1,12 +1,6 @@
 package ru.shemplo.genome.rf.data;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -95,6 +89,14 @@ public class SourceDataset {
         for (int i = 0; i < row.length; i++) {
             row [i] = (row [i] - min) / delta;
         }
+    }
+    
+    public List <String> getAllGenes () {
+        return entitiesList.stream ()
+             . map      (SourceEntity::getGenes)
+             . flatMap  (Set::stream)
+             . distinct ()
+             . collect  (Collectors.toList ());
     }
     
 }

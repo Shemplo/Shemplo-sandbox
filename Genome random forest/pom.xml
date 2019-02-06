@@ -103,7 +103,7 @@
     <dependency>
       <groupId>ru.shemplo</groupId>
       <artifactId>snowball</artifactId>
-      <version>0.0.1</version>
+      <version>1.0.0</version>
     </dependency>
   </dependencies>
 </project>

@@ -6,7 +6,7 @@ from sklearn.feature_selection import chi2, f_classif, mutual_info_classif
 from sklearn.ensemble  import RandomForestClassifier, ExtraTreesClassifier
 from sklearn.feature_selection import SelectKBest, SelectFromModel, RFECV
 from sklearn.model_selection import train_test_split, RandomizedSearchCV
-from sklearn.metrics import accuracy_score, make_scorer, f1_score
+from sklearn.metrics import accuracy_score, make_scorer
 from sklearn.svm import SVC, LinearSVC
 
 seed_shift = int   (sys.argv [1])
@@ -28,23 +28,16 @@ np.random.seed (163 + seed_shift)
 train_data, test_data, train_target, test_target =\
 	train_test_split (train_data, train_target, 
 					  test_size = test_size)
-	
-forest = RandomForestClassifier (n_estimators=estimators,
-                                 random_state=0)
-forest.fit (train_data, train_target)
 
-scorer = make_scorer (f1_score)
-scores = scorer (forest, test_data, test_target)
-print "Match score: %f" % scores 
-
-importances = forest.feature_importances_
-std = np.std ([tree.feature_importances_ for tree in forest.estimators_],
-              axis=0)
-indices = np.argsort (importances) [::-1]							  
-
-output = open ("../../../temp/sklearn-%s.txt" % str (estimators), 'w')
-output.write (str (scores) + "\n")
-for f in range(train_data.shape[1]):
-	output.write ("%s %f\n" % (feature_names [indices [f]], importances [indices [f]]))
+# 17 -> 18 in tarin.csv
+# 18 -> 19 in train.csv
+"""
+print train_data
+for i in train_target.index:
+	print "%d" % (i)
+"""
+output = open ("../../../temp/trainset.csv", 'w')
+output.write ("geo_access\n")
+for i in train_target.index:
+	output.write ("%s\n" % train_input.iloc [i].name)
 output.close ()
-
