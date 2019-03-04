@@ -57,16 +57,16 @@ public class MCMCSingleRunHolder {
                 suggestedGraph = tmpGraph.removeEdges (true, candidat, opposite);
             } catch (IllegalStateException ise) { return; }
             
-            qSs2S = 1.0 / (2.0 * tmpGraph.getNumberOfInnerEdges (initialGraphEdges));
-            qS2Ss = 1.0 / (2.0 * suggestedGraph.getNumberOfOuterEdges (initialGraphEdges));
+            qSs2S = 1.0 / (tmpGraph.getNumberOfInnerEdges (initialGraphEdges));
+            qS2Ss = 1.0 / (suggestedGraph.getNumberOfOuterEdges (initialGraphEdges));
         } else {
             System.out.println ("add");
             try {
                 suggestedGraph = tmpGraph.addEdges (true, candidat, opposite);
             } catch (IllegalStateException ise) { return; }
             
-            qSs2S = 1.0 / (2.0 * suggestedGraph.getNumberOfInnerEdges (initialGraphEdges));
-            qS2Ss = 1.0 / (2.0 * tmpGraph.getNumberOfOuterEdges (initialGraphEdges));
+            qSs2S = 1.0 / (suggestedGraph.getNumberOfInnerEdges (initialGraphEdges));
+            qS2Ss = 1.0 / (tmpGraph.getNumberOfOuterEdges (initialGraphEdges));
         }
         
         double pSs = suggestedGraph.getLikelihood ();
