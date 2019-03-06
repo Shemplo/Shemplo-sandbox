@@ -70,7 +70,7 @@ public class MCMCSingleRunHolder {
         }
         
         double pSs = suggestedGraph.getLikelihood ();
-        double rho = Math.min (1.0, (pSs / pS) * (qS2Ss / qSs2S));
+        double rho = Math.min (1.0, qS2Ss / qSs2S);
         System.out.println ("Rho: " + rho);
         
         if (RANDOM.nextDouble () <= rho) {
