@@ -5,16 +5,13 @@ import static ru.shemplo.metagennet.RunMetaGenMCMC.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
-import lombok.ToString;
+import lombok.*;
 import ru.shemplo.snowball.stuctures.Pair;
 
 @RequiredArgsConstructor
 public class Graph {
     
-    private final Map <Integer, Vertex> verticies;
+    @Getter private final Map <Integer, Vertex> verticies;
     @Getter private final Set <Edge> edges;
     
     private boolean isInitial = false;
@@ -54,11 +51,11 @@ public class Graph {
                              . map     (Vertex::getId)
                              . collect (Collectors.toList ());
         sj.add (String.format ("Graph #%d", hashCode ()));
-        sj.add (String.format (" Verticies: %s", verts.toString ()));
+        sj.add (String.format (" Verticies : %s", verts.toString ()));
         
         List <String> eds = edges.stream ().map (Edge::toString)
                           . collect (Collectors.toList ());
-        sj.add (String.format (" Edges    : %s", eds.toString ()));
+        sj.add (String.format (" Edges (%2d): %s", eds.size (), eds.toString ()));
         sj.add ("");
         
         return sj.toString ();
@@ -195,24 +192,39 @@ public class Graph {
         return innerEdgesNumber;
     }
     
+    public int sizeInVerticies () {
+        return verticies.size ();
+    }
+    
+    public int sizeInEdges () {
+        return edges.size ();
+    }
+    
     @RequiredArgsConstructor
     @ToString (exclude = "edges")
     @EqualsAndHashCode (exclude = "edges")
     public static class Vertex {
         
-        private final Map <Vertex, Edge> edges = new HashMap <> ();
+        @Getter private final Map <Vertex, Edge> edges = new HashMap <> ();
         
         @Getter private final int id;
         
-        @Getter private final double weight;
+        @Getter @Setter
+        @NonNull private Double weight;
+        
+        public boolean isConnectedWith (Vertex vertex) {
+            return edges.containsKey (vertex);
+        }
         
     }
     
+    @EqualsAndHashCode (exclude = {"weight"}, callSuper = true)
     public static class Edge extends Pair <Vertex, Vertex> {
 
         private static final long serialVersionUID = -33766014367150868L;
         
-        @Getter private final double weight;
+        @Getter @Setter
+        @NonNull private Double weight;
         
         public Edge (Vertex F, Vertex S, double weight) { 
             super (F, S); this.weight = weight;
@@ -222,6 +234,9 @@ public class Graph {
         public String toString () {
             return String.format ("%d -> %d", F.id, S.id);
         }
+        
+        @Override
+        public Edge swap () { return new Edge (S, F, weight); }
         
     }
     
