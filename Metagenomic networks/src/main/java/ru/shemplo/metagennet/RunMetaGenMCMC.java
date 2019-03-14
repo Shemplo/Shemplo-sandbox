@@ -1,24 +1,46 @@
 package ru.shemplo.metagennet;
 
 import java.io.*;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 import java.util.stream.Collectors;
 
+import ru.shemplo.metagennet.graph.Graph;
 import ru.shemplo.metagennet.mcmc.GraphHolder;
 import ru.shemplo.metagennet.mcmc.MCMCSingleRunHolder;
+import ru.shemplo.snowball.stuctures.Pair;
 import ru.shemplo.snowball.utils.StringManip;
 
 public class RunMetaGenMCMC {
     
     public static final Random RANDOM = new Random ();
     
+    private static final Map <Integer, Double> occurrences = new HashMap <> ();
+    
     public static void main (String ... args) throws IOException {
+        Locale.setDefault (Locale.ENGLISH);
+        
         GraphHolder mcmc = new GraphHolder (readMatrix (GraphGenerator.GEN_FILE));
-        MCMCSingleRunHolder singleRun = mcmc.makeSingleRun (250);
-        singleRun.doAllIterations ();
+        for (int i = 0; i < 100; i++) {
+            MCMCSingleRunHolder singleRun = mcmc.makeSingleRun (10000);
+            singleRun.doAllIterations ();
+            
+            Graph graph = singleRun.getCurrentGraph ();
+            graph.getVertices ().forEach ((id, __) -> 
+                occurrences.compute (id, (___, v) -> v == null ? 1 : v + 1)
+            );
+        }
+        
+        double sum = occurrences.values ().stream ().mapToDouble (v -> v).sum ();
+        occurrences.keySet ().forEach (key -> {
+            occurrences.compute (key, (__, v) -> v / sum);
+        });
+        
+        occurrences.entrySet ().stream ()
+        . map     (Pair::fromMapEntry)
+        . sorted  ((a, b) -> -Double.compare (a.S, b.S))
+        . forEach (p -> {
+            System.out.println (String.format ("%3d = %.6f", p.F, p.S));
+        });
     }
     
     private static List <List <Double>> readMatrix (File file) throws IOException {

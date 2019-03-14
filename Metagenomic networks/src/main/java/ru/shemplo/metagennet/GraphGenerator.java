@@ -12,12 +12,12 @@ import ru.shemplo.metagennet.graph.Graph.Vertex;
 
 public class GraphGenerator {
     
-    public static final double BETA_A_V = 3, BETA_B_V = 2;
+    public static final double BETA_A_V = 3, BETA_B_V = 1;
     public static final double BETA_A_E = 2, BETA_B_E = 1;
-    public static final int VERTS = 40, VERTS_DEV = 3; // deviation
-    public static final int EDGES = (VERTS - 1) * 2 + 30,
+    public static final int VERTS = 15, VERTS_DEV = 3; // deviation
+    public static final int EDGES = (VERTS - 1) * 2 + 10,
                             EDGES_DEV = 2;
-    public static final int MODULE_SIZE = 4;
+    public static final int MODULE_SIZE = 5;
     
     public static final File GEN_FILE = new File ("runtime/graph.csv");
     
@@ -27,39 +27,59 @@ public class GraphGenerator {
     private static Graph graph = new Graph (new HashMap <> (), new HashSet <> ());
     
     public static void main (String ... args) throws Exception {
-        graph.getVerticies ().put (0, new Vertex (0, -1D)); // graph of 1 vertex
+        //
+        // Stage 0 - initialization of vertices
+        //
+        int vertsN = VERTS + VERTS_DEV - R.nextInt (2 * VERTS_DEV + 1);
+        Map <Vertex, Set <Integer>> sds = new HashMap <> (); // system of disjoint sets
+        for (int i = 0; i < vertsN; i++) {
+            Vertex vertex = new Vertex (i, -1D);
+            graph.getVertices ().put (i, vertex);
+            sds.put (vertex, new HashSet <> ());
+        }
         
         //
-        // Stage 1 - graph dummy
+        // Stage 0.5 - initialization of tree
         //
-        boolean enoughVerticies = false, enoughEdges = false;
-        while (!enoughVerticies || !enoughEdges) {
-            if (!enoughVerticies && addVertex ()) {
-                final int bound = graph.sizeInVerticies ();
-                Vertex vertex = new Vertex (bound, -1D);
+        int sets = sds.size ();
+        while (sets != 1) {
+            Vertex a = graph.getVertices ().get (R.nextInt (vertsN)),
+                   b = graph.getVertices ().get (R.nextInt (vertsN));
+            if (!a.equals (b) && !sds.get (a).contains (b.getId ())) {
+                System.out.println (a + " -> " + b + " / " + sets);
+                final Edge edge = new Edge (a, b, -1D);
+                Set <Integer> setA = sds.get (a);
+                setA.addAll (sds.get (b));
                 
-                final int neigborIndex = R.nextInt (bound);
-                Vertex neighbor = graph.getVerticies ()
-                                . get (neigborIndex);
+                sds.get (b).forEach (vertex -> {
+                    sds.put (graph.getVertices ().get (vertex), setA);
+                });
                 
-                Edge edge = new Edge (vertex, neighbor, -1D);
-                graph = graph.addEdges (true, edge, edge.swap ());
-            } else if (!enoughEdges && graph.sizeInVerticies () > VERTS / 5) {
-                int a = 0, b = 0, bound = graph.sizeInVerticies ();
-                while (a == b) {
-                    a = R.nextInt (bound); b = R.nextInt (bound);
-                }
-                
-                Vertex va = graph.getVerticies ().get (a),
-                       vb = graph.getVerticies ().get (b);
-                if (!va.isConnectedWith (vb)) {
-                    Edge edge = new Edge (va, vb, -1D);
-                    graph = graph.addEdges (true, edge, edge.swap ());
-                }
+                graph = graph.addEdges (false, edge, edge.swap ());
+                sets -= 1;
+            } else if (!a.equals (b)) {
+                System.out.println (a + " ~ " + b);
+            }
+        }
+        
+        System.out.println (graph);
+        
+        //
+        // Stage 1 - adding additional edges
+        //
+        int edgesN = EDGES - 2 * R.nextInt (EDGES_DEV * 2 + 1);
+        while (graph.sizeInEdges () < edgesN) {
+            int a = 0, b = 0, bound = graph.sizeInVertices ();
+            while (a == b) {
+                a = R.nextInt (bound); b = R.nextInt (bound);
             }
             
-            enoughVerticies = graph.sizeInVerticies () >= VERTS + VERTS_DEV - R.nextInt (VERTS_DEV * 2 + 1);
-            enoughEdges     = graph.sizeInEdges () >= EDGES - 2 * R.nextInt (EDGES_DEV * 2 + 1);
+            Vertex va = graph.getVertices ().get (a),
+                   vb = graph.getVertices ().get (b);
+            if (!va.isConnectedWith (vb)) {
+                final Edge edge = new Edge (va, vb, -1D);
+                graph = graph.addEdges (true, edge, edge.swap ());
+            }
         }
         
         System.out.println (graph);
@@ -70,8 +90,8 @@ public class GraphGenerator {
         // 
         Set <Vertex> module = new HashSet <> ();
         
-        int initialIndex = R.nextInt (graph.sizeInVerticies ());
-        module.add (graph.getVerticies ().get (initialIndex));
+        int initialIndex = R.nextInt (graph.sizeInVertices ());
+        module.add (graph.getVertices ().get (initialIndex));
         
         while (module.size () < MODULE_SIZE) {
             int victim = R.nextInt (module.size ());
@@ -105,7 +125,7 @@ public class GraphGenerator {
         //
         // Stage 4 - uniform distribution on rest graph
         //
-        graph.getVerticies ().forEach ((id, vertex) -> {
+        graph.getVertices ().forEach ((id, vertex) -> {
             if (vertex.getWeight () != -1D) { return; }
             vertex.setWeight (R.nextDouble ());
         });
@@ -120,9 +140,9 @@ public class GraphGenerator {
         //
         // Stage 5 - publishing graph
         //
-        int n = graph.sizeInVerticies ();
+        int n = graph.sizeInVertices ();
         double [][] matrix = new double [n][n];
-        graph.getVerticies ().forEach ((id, vertex) -> {
+        graph.getVertices ().forEach ((id, vertex) -> {
             vertex.getEdges ().forEach ((neighbor, edge) -> {
                 matrix [id][neighbor.getId ()] = edge.getWeight ();
             });

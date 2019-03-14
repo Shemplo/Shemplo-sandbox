@@ -11,19 +11,19 @@ import ru.shemplo.snowball.stuctures.Pair;
 @RequiredArgsConstructor
 public class Graph {
     
-    @Getter private final Map <Integer, Vertex> verticies;
+    @Getter private final Map <Integer, Vertex> vertices;
     @Getter private final Set <Edge> edges;
     
     private boolean isInitial = false;
     
     public Graph (List <List <Double>> matrix) {
-        this.verticies = new HashMap <> ();
+        this.vertices = new HashMap <> ();
         this.edges = new HashSet <> ();
         this.isInitial = true;
         
         for (int i = 0; i < matrix.size (); i++) {
             final double weight = matrix.get (i).get (i);
-            verticies.put (i, new Vertex (i, weight));
+            vertices.put (i, new Vertex (i, weight));
         }
         
         for (int i = 0; i < matrix.size (); i++) {
@@ -33,8 +33,8 @@ public class Graph {
                 double weight = matrix.get (i).get (j);
                 if (weight == 0) { continue; }
                 
-                final Vertex f = verticies.get (i), 
-                             s = verticies.get (j);
+                final Vertex f = vertices.get (i), 
+                             s = vertices.get (j);
                 
                 Edge edge = new Edge (f, s, weight);
                 f.edges.put (s, edge);
@@ -47,7 +47,7 @@ public class Graph {
     public String toString () {
         StringJoiner sj = new StringJoiner ("\n");
         
-        List <Integer> verts = verticies.values ().stream ()
+        List <Integer> verts = vertices.values ().stream ()
                              . map     (Vertex::getId)
                              . collect (Collectors.toList ());
         sj.add (String.format ("Graph #%d", hashCode ()));
@@ -62,7 +62,7 @@ public class Graph {
     }
     
     public Edge getOpposite (Edge edge) {
-        return verticies.get (edge.S.id).edges.get (edge.F);
+        return vertices.get (edge.S.id).edges.get (edge.F);
     }
     
     public Graph getInitialSubgraph () {
@@ -79,13 +79,13 @@ public class Graph {
     public Graph makeCopy () {
         Graph graph = new Graph (new HashMap <> (), new HashSet <> ());
         
-        verticies.forEach ((id, vetex) -> {
-            graph.verticies.put (id, new Vertex (id, vetex.weight));
+        vertices.forEach ((id, vetex) -> {
+            graph.vertices.put (id, new Vertex (id, vetex.weight));
         });
         
         edges.forEach (edge -> {
-            Vertex f = graph.verticies.get (edge.F.id),
-                   s = graph.verticies.get (edge.S.id);
+            Vertex f = graph.vertices.get (edge.F.id),
+                   s = graph.vertices.get (edge.S.id);
             Edge e = new Edge (f, s, edge.weight);
             graph.edges.add (e);
             f.edges.put (s, e);
@@ -101,12 +101,12 @@ public class Graph {
             if (this.edges.contains (edge)) { continue; }
             
             Vertex f = new Vertex (edge.F.id, edge.F.weight);
-            copy.verticies.putIfAbsent (edge.F.id, f);
-            f = copy.verticies.get (edge.F.id);
+            copy.vertices.putIfAbsent (edge.F.id, f);
+            f = copy.vertices.get (edge.F.id);
             
             Vertex s = new Vertex (edge.S.id, edge.S.weight);
-            copy.verticies.putIfAbsent (edge.S.id, s);
-            s = copy.verticies.get (edge.S.id);
+            copy.vertices.putIfAbsent (edge.S.id, s);
+            s = copy.vertices.get (edge.S.id);
             
             Edge e = new Edge (f, s, edge.weight);
             f.edges.put (s, e);
@@ -127,8 +127,8 @@ public class Graph {
         
         for (Edge edge : edges) {
             if (!this.edges.contains (edge)) { continue; }
-            Vertex f = copy.verticies.get (edge.F.id), 
-                   s = copy.verticies.get (edge.S.id);
+            Vertex f = copy.vertices.get (edge.F.id), 
+                   s = copy.vertices.get (edge.S.id);
             copy.edges.remove (edge);
             f.edges.remove (s);
         }
@@ -139,15 +139,15 @@ public class Graph {
             throw new IllegalStateException (message);
         }
         
-        if (connectivity != -2) {
-            copy.verticies.remove (connectivity);
+        if (checkConnectivity && connectivity != -2) {
+            copy.vertices.remove (connectivity);
         }
         
         return copy;
     }
     
-    public double getLikelihood () {
-        double pWv = verticies.values ().stream ().mapToDouble (Vertex::getWeight)
+    public double getLikelihood (double betaAV, double betaAE) {
+        double pWv = vertices.values ().stream ().mapToDouble (Vertex::getWeight)
                    . reduce (1.0, (a, b) -> a * b);
         double pWe = edges.stream ().mapToDouble (Edge::getWeight)
                    . reduce (1.0, (a ,b) -> a * b);
@@ -165,8 +165,8 @@ public class Graph {
     public int getNumberOfOuterEdges (Collection <Edge> edges) {
         int outerEdgesNumber = 0;
         for (Edge edge : edges) {
-            int f = verticies.containsKey (edge.F.id) ? 1 : 0;
-            int s = verticies.containsKey (edge.S.id) ? 1 : 0;
+            int f = vertices.containsKey (edge.F.id) ? 1 : 0;
+            int s = vertices.containsKey (edge.S.id) ? 1 : 0;
             outerEdgesNumber += (f + s) & 2;
         }
         
@@ -184,16 +184,16 @@ public class Graph {
     public int getNumberOfInnerEdges (Collection <Edge> edges) {
         int innerEdgesNumber = 0;
         for (Edge edge : edges) {
-            int f = verticies.containsKey (edge.F.id) ? 1 : 0;
-            int s = verticies.containsKey (edge.S.id) ? 1 : 0;
+            int f = vertices.containsKey (edge.F.id) ? 1 : 0;
+            int s = vertices.containsKey (edge.S.id) ? 1 : 0;
             innerEdgesNumber += (f + s) / 2;
         }
         
         return innerEdgesNumber;
     }
     
-    public int sizeInVerticies () {
-        return verticies.size ();
+    public int sizeInVertices () {
+        return vertices.size ();
     }
     
     public int sizeInEdges () {
@@ -250,14 +250,14 @@ public class Graph {
      * 
      */
     public static int isGraphConnected (Graph graph) {
-        if (graph.verticies.size () < 2) { return -2; }
+        if (graph.vertices.size () < 2) { return -2; }
         
         
         Queue <Vertex> queue = new LinkedList <> ();
         Set <Vertex> visited = new HashSet <> ();
         
-        List <Integer> keys = new ArrayList <> (graph.verticies.keySet ());
-        Vertex initial = graph.verticies.get (keys.get (0));
+        List <Integer> keys = new ArrayList <> (graph.vertices.keySet ());
+        Vertex initial = graph.vertices.get (keys.get (0));
         visited.add (initial);
         queue.add (initial);
         
@@ -271,11 +271,11 @@ public class Graph {
             });
         }
         
-        int verticies = graph.verticies.size ();
+        int verticies = graph.vertices.size ();
         if (visited.size () == verticies) {
             return -2;
         } else if (visited.size () == verticies - 1) {
-            List <Vertex> vertecies = new ArrayList <> (graph.verticies.values ());
+            List <Vertex> vertecies = new ArrayList <> (graph.vertices.values ());
             Collections.shuffle (vertecies, RANDOM);
             
             for (Vertex vertex : vertecies) {
