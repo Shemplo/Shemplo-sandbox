@@ -4,12 +4,15 @@ import static  ru.shemplo.metagennet.GraphGenerator.*;
 import static ru.shemplo.metagennet.RunMetaGenMCMC.*;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import ru.shemplo.metagennet.graph.Graph;
 import ru.shemplo.metagennet.graph.Graph.Edge;
+import ru.shemplo.metagennet.graph.Graph.Vertex;
 
 @RequiredArgsConstructor
 public class MCMCSingleRunHolder {
@@ -22,20 +25,27 @@ public class MCMCSingleRunHolder {
     private final int iterations;
     private int iteration = 0;
     
+    @Getter
+    private final List <Set <Vertex>> snapshots = new ArrayList <> ();
+    
     public boolean finishedWork () {
         return iteration >= iterations;
     }
     
-    public void doAllIterations () {
+    public void doAllIterations (boolean idling) {
         //System.out.println ("Start");
         while (!finishedWork ()) {
-            makeIteration ();
+            makeIteration (idling);
             
+            int limit = (int) (iterations * 0.9);
+            if (iteration >= limit && iteration % 50 == 0) {
+                snapshots.add (new HashSet <> (currentGraph.getVertices ().values ()));
+            }
             //System.out.println (currentGraph.getEdges ());
         }
     }
     
-    public void makeIteration () {
+    public void makeIteration (boolean idling) {
         if (finishedWork ()) { return; }
         
         if (iteration == 0) {
@@ -44,7 +54,7 @@ public class MCMCSingleRunHolder {
             iteration += 1; return;
         }
         
-        double pS = currentGraph.getLikelihood (BETA_A_V, BETA_A_E);
+        //double pS = currentGraph.getLikelihood (BETA_A_V, BETA_A_E);
         
         int candidatIndex = RANDOM.nextInt (initialGraphEdges.size ());
         Edge candidat = initialGraphEdges.get (candidatIndex);
@@ -72,7 +82,8 @@ public class MCMCSingleRunHolder {
         }
         
         double pSs = suggestedGraph.getLikelihood (BETA_A_V, BETA_A_E);
-        double rho = Math.min (1.0, (pSs / pS) * (qSs2S / qS2Ss));
+        if (idling) { pSs = 1.0; } // do not consider likelihood
+        double rho = Math.min (1.0, pSs * (qSs2S / qS2Ss));
         //System.out.println ("Rho: " + rho);
         
         if (RANDOM.nextDouble () <= rho) {
@@ -80,6 +91,7 @@ public class MCMCSingleRunHolder {
             currentGraph = suggestedGraph;
         }
         
+        //System.out.println (currentGraph);
         iteration += 1;
     }
     

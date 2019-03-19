@@ -19,15 +19,24 @@ public class RunMetaGenMCMC {
     public static void main (String ... args) throws IOException {
         Locale.setDefault (Locale.ENGLISH);
         
+        //GraphHolder mcmc = new GraphHolder (readMatrix (new File ("runtime/graph_good.csv")));
         GraphHolder mcmc = new GraphHolder (readMatrix (GraphGenerator.GEN_FILE));
-        for (int i = 0; i < 100; i++) {
-            MCMCSingleRunHolder singleRun = mcmc.makeSingleRun (10000);
-            singleRun.doAllIterations ();
+        for (int i = 0; i < 1000; i++) {
+            MCMCSingleRunHolder singleRun = mcmc.makeSingleRun (1000);
+            singleRun.doAllIterations (false);
             
             Graph graph = singleRun.getCurrentGraph ();
             graph.getVertices ().forEach ((id, __) -> 
                 occurrences.compute (id, (___, v) -> v == null ? 1 : v + 1)
             );
+            //System.out.println (graph);
+            
+            singleRun.getSnapshots ().forEach (gph -> {
+                gph.forEach (vertex -> 
+                    occurrences.compute (vertex.getId (), 
+                      (___, v) -> v == null ? 1 : v + 1)
+                );
+            });
         }
         
         double sum = occurrences.values ().stream ().mapToDouble (v -> v).sum ();
