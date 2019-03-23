@@ -13,8 +13,8 @@ import ru.shemplo.metagennet.graph.Graph.Vertex;
 
 public class GraphGenerator {
     
-    public static final double BETA_A_V = 5, BETA_B_V = 1;
-    public static final double BETA_A_E = 3, BETA_B_E = 1;
+    public static final double BETA_A_V = 0.2, BETA_B_V = 1;
+    public static final double BETA_A_E = 0.1, BETA_B_E = 1;
     public static final int VERTS = 50, VERTS_DEV = 3; // deviation
     public static final int EDGES = (VERTS - 1) * 2 + 30,
                             EDGES_DEV   = 2;

@@ -88,7 +88,7 @@ public class UniformGenerationTest {
         for (int i = 0; i < 1000 * 10; i++) {
             Set <Vertex> module = GraphGenerator.generateModule (graph, 
                                            new Random (), MODULE_SIZE);
-            //module = mcmcModuleSelector ();
+            module = mcmcModuleSelector ();
             
             Set <Integer> set = module.stream ().map (Vertex::getId)
                               . collect (Collectors.toSet ());

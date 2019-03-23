@@ -22,7 +22,7 @@ public class RunMetaGenMCMC {
         //GraphHolder mcmc = new GraphHolder (readMatrix (new File ("runtime/graph_good.csv")));
         GraphHolder mcmc = new GraphHolder (readMatrix (GraphGenerator.GEN_FILE));
         for (int i = 0; i < 1000; i++) {
-            MCMCSingleRunHolder singleRun = mcmc.makeSingleRun (1000);
+            MCMCSingleRunHolder singleRun = mcmc.makeSingleRun (10000);
             singleRun.doAllIterations (false);
             
             Graph graph = singleRun.getCurrentGraph ();
