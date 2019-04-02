@@ -19,6 +19,10 @@ public class GraphModules {
         });
     }
     
+    public Double getLikelihood (Vertex vertex) {
+        return modules.get (vertex.getId ()).getLikelihood ();
+    }
+    
     @RequiredArgsConstructor
     public static class GraphModule {
         

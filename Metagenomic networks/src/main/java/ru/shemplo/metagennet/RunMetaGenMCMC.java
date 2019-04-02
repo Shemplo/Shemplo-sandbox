@@ -5,8 +5,9 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import ru.shemplo.metagennet.graph.Graph;
-import ru.shemplo.metagennet.mcmc.GraphHolder;
-import ru.shemplo.metagennet.mcmc.MCMCSingleRunHolder;
+import ru.shemplo.metagennet.io.CSVGraphReader;
+import ru.shemplo.metagennet.mcmc.MCMC;
+import ru.shemplo.metagennet.mcmc.MCMCDefault;
 import ru.shemplo.snowball.stuctures.Pair;
 import ru.shemplo.snowball.utils.StringManip;
 
@@ -19,10 +20,19 @@ public class RunMetaGenMCMC {
     public static void main (String ... args) throws IOException {
         Locale.setDefault (Locale.ENGLISH);
         
+        CSVGraphReader reader = new CSVGraphReader ();
+        Graph initial = reader.readGraph ();
+        System.out.println (initial);
+        
         //GraphHolder mcmc = new GraphHolder (readMatrix (new File ("runtime/graph_good.csv")));
-        GraphHolder mcmc = new GraphHolder (readMatrix (GraphGenerator.GEN_FILE));
+        //List <List <Double>> graphMatrix = readMatrix (GraphGenerator.GEN_FILE);
+        //Graph initial = new Graph (graphMatrix, null);
+        
         for (int i = 0; i < 1000; i++) {
-            MCMCSingleRunHolder singleRun = mcmc.makeSingleRun (10000);
+            Graph copy = initial.makeCopy ();
+            copy.setInitial (true);
+            
+            MCMC singleRun = new MCMCDefault (copy, 1000);
             singleRun.doAllIterations (false);
             
             Graph graph = singleRun.getCurrentGraph ();
@@ -37,7 +47,12 @@ public class RunMetaGenMCMC {
                       (___, v) -> v == null ? 1 : v + 1)
                 );
             });
+            
+            if (i % 50 == 0 && i > 0) {
+                System.out.print ("=");
+            }
         }
+        System.out.println ();
         
         double sum = occurrences.values ().stream ().mapToDouble (v -> v).sum ();
         occurrences.keySet ().forEach (key -> {
@@ -52,6 +67,7 @@ public class RunMetaGenMCMC {
         });
     }
     
+    @SuppressWarnings ("unused")
     private static List <List <Double>> readMatrix (File file) throws IOException {
         List <List <Double>> matrix = new ArrayList <> ();
         try (

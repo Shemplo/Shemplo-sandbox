@@ -15,23 +15,25 @@ import ru.shemplo.metagennet.graph.Graph.Edge;
 import ru.shemplo.metagennet.graph.Graph.Vertex;
 
 @RequiredArgsConstructor
-public class MCMCSingleRunHolder {
+public class MCMCDefault implements MCMC {
     
-    private final Graph initialGraph;
+    protected final Graph initialGraph;
     
-    private List <Edge> initialGraphEdges;
-    @Getter private Graph currentGraph;
+    protected List <Edge> initialGraphEdges;
+    @Getter protected Graph currentGraph;
     
-    private final int iterations;
-    private int iteration = 0;
+    protected final int iterations;
+    protected int iteration = 0;
     
     @Getter
-    private final List <Set <Vertex>> snapshots = new ArrayList <> ();
+    protected final List <Set <Vertex>> snapshots = new ArrayList <> ();
     
+    @Override
     public boolean finishedWork () {
         return iteration >= iterations;
     }
     
+    @Override
     public void doAllIterations (boolean idling) {
         //System.out.println ("Start");
         while (!finishedWork ()) {
@@ -45,6 +47,7 @@ public class MCMCSingleRunHolder {
         }
     }
     
+    @Override
     public void makeIteration (boolean idling) {
         if (finishedWork ()) { return; }
         
@@ -54,7 +57,7 @@ public class MCMCSingleRunHolder {
             iteration += 1; return;
         }
         
-        //double pS = currentGraph.getLikelihood (BETA_A_V, BETA_A_E);
+        double pS = currentGraph.getLikelihood (BETA_A_V, BETA_A_E);
         
         int candidatIndex = RANDOM.nextInt (initialGraphEdges.size ());
         Edge candidat = initialGraphEdges.get (candidatIndex);
@@ -82,8 +85,8 @@ public class MCMCSingleRunHolder {
         }
         
         double pSs = suggestedGraph.getLikelihood (BETA_A_V, BETA_A_E);
-        if (idling) { pSs = 1.0; } // do not consider likelihood
-        double rho = Math.min (1.0, pSs * (qSs2S / qS2Ss));
+        if (idling) { pSs = 1.0; pS = 1.0; } // do not consider likelihood
+        double rho = Math.min (1.0, (pSs / pS) * (qSs2S / qS2Ss));
         //System.out.println ("Rho: " + rho);
         
         if (RANDOM.nextDouble () <= rho) {

@@ -11,8 +11,8 @@ public class GraphHolder {
     
     @Getter private final List <List <Double>> graph;
     
-    public synchronized MCMCSingleRunHolder makeSingleRun (int iterations) {
-        return new MCMCSingleRunHolder (new Graph (graph, null), iterations);
+    public synchronized MCMCDefault makeSingleRun (int iterations) {
+        return new MCMCDefault (new Graph (graph, null), iterations);
     }
     
 }

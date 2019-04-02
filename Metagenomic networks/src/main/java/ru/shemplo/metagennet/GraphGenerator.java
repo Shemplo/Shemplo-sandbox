@@ -202,7 +202,7 @@ public class GraphGenerator {
             Writer w = new OutputStreamWriter (os, StandardCharsets.UTF_8);
             PrintWriter pw = new PrintWriter (w);
         ) {
-            pw.println ("digraph finite_state_machine {");
+            pw.println ("graph finite_state_machine {");
             pw.println ("    rankdir=LR;");
             pw.println ("    size=\"24\";");
             pw.println ("    node [shape = doublecircle];");
@@ -220,7 +220,7 @@ public class GraphGenerator {
                 if (module.contains (edge.F) && module.contains (edge.S)) {
                     appendix = "[color = red]";
                 }
-                pw.println (String.format ("    V%d -> V%d [label = \"%f\"]%s;", 
+                pw.println (String.format ("    V%d -- V%d [label = \"%f\"]%s;", 
                             edge.F.getId (), edge.S.getId (),
                             edge.getWeight (), appendix));
             }

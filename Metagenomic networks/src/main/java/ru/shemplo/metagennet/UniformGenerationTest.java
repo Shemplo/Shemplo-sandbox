@@ -7,7 +7,7 @@ import java.util.stream.Stream;
 import ru.shemplo.metagennet.graph.Graph;
 import ru.shemplo.metagennet.graph.Graph.Edge;
 import ru.shemplo.metagennet.graph.Graph.Vertex;
-import ru.shemplo.metagennet.mcmc.MCMCSingleRunHolder;
+import ru.shemplo.metagennet.mcmc.MCMCDefault;
 
 public class UniformGenerationTest {
     
@@ -85,24 +85,27 @@ public class UniformGenerationTest {
         System.out.println ("Total linked graphs: " + totalLinkedGraphs);
         System.out.println ("Uniform average: " + uniformAverage);
         
-        for (int i = 0; i < 1000 * 10; i++) {
-            Set <Vertex> module = GraphGenerator.generateModule (graph, 
-                                           new Random (), MODULE_SIZE);
-            module = mcmcModuleSelector ();
+        for (int a = 0; a < 100; a++) {
+            statistics.clear ();
+            for (int i = 0; i < 1000 * 10; i++) {
+                Set <Vertex> module = GraphGenerator.generateModule (graph, 
+                        new Random (), MODULE_SIZE);
+                //module = mcmcModuleSelector ();
+                
+                Set <Integer> set = module.stream ().map (Vertex::getId)
+                        . collect (Collectors.toSet ());
+                statistics.compute (set, (__, v) -> v == null ? 1 : v + 1);
+            }
             
-            Set <Integer> set = module.stream ().map (Vertex::getId)
-                              . collect (Collectors.toSet ());
-            statistics.compute (set, (__, v) -> v == null ? 1 : v + 1);
+            double deviation = statistics.values ().stream ()
+                    . map (v -> v - uniformAverage)
+                    . mapToDouble (v -> v * v).sum ();
+            System.out.println ("Deviation: " + Math.sqrt (deviation));            
         }
-        
-        double deviation = statistics.values ().stream ()
-                         . map (v -> v - uniformAverage)
-                         . mapToDouble (v -> v * v).sum ();
-        System.out.println ("Deviation: " + Math.sqrt (deviation));
     }
     
     public static Set <Vertex> mcmcModuleSelector () {
-        MCMCSingleRunHolder runHolder = new MCMCSingleRunHolder (graph, 100);
+        MCMCDefault runHolder = new MCMCDefault (graph, 100);
         runHolder.doAllIterations (true);
         
         return new HashSet <> (runHolder.getCurrentGraph ().getVertices ().values ());

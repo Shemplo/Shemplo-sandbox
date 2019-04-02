@@ -15,7 +15,7 @@ public class Graph {
     @Getter private final GraphModules graphModules;
     @Getter private final Set <Edge> edges;
     
-   @Setter private boolean isInitial = false;
+    @Setter private boolean isInitial = false;
     
     public Graph (List <List <Double>> matrix, GraphModules modules) {
         this.vertices = new HashMap <> ();
@@ -73,9 +73,30 @@ public class Graph {
             throw new IllegalStateException (message);
         }
         
-        Edge edge = new ArrayList <> (edges).get (RANDOM.nextInt (edges.size ()));
         final Graph empty = new Graph (new HashMap <> (), graphModules, new HashSet <> ());
+        final Edge edge = new ArrayList <> (edges).get (RANDOM.nextInt (edges.size ()));
         return empty.addEdges (true, edge, getOpposite (edge));
+    }
+    
+    public Graph getInitialSubgraph (int vertices) {
+        if (vertices <= 2) { return getInitialSubgraph (); }
+        
+        if (!isInitial) {
+            String message = "Initial subgraph can't be make from non-initial graph";
+            throw new IllegalStateException (message);
+        }
+        
+        Graph empty = new Graph (new HashMap <> (), 
+                 graphModules, new HashSet <> ());
+        
+        while (empty.sizeInVertices () < vertices) {
+            final int index = RANDOM.nextInt (edges.size ());
+            Edge edge = new ArrayList <> (edges).get (index);
+            try   { empty = empty.addEdges (true, edge, edge.swap ()); } 
+            catch (IllegalStateException ise) {}
+        }
+        
+        return empty;
     }
     
     public Graph makeCopy () {
@@ -170,6 +191,7 @@ public class Graph {
     private Edge   changedE;
     
     public double getLikelihood (double betaAV, double betaAE) {
+        /*
         if (isInitial) {
             double pWv = vertices.values ().stream ().mapToDouble (Vertex::getWeight)
                        . reduce (1.0, (a, b) -> a * b);
@@ -177,6 +199,7 @@ public class Graph {
                        . reduce (1.0, (a ,b) -> a * b);
             return Math.sqrt (pWv * pWe);
         }
+        */
         
         //System.out.println (changedE + " " + changedV);
         double pE  = Optional.ofNullable (changedE) .orElse (new Edge (null, null, 1.0)).getWeight ();
@@ -192,6 +215,37 @@ public class Graph {
         }
         
         return result;
+    }
+    
+    public Set <Vertex> getNeighboursV (Collection <Vertex> vertices) {
+        final Set <Vertex> neighbours = new HashSet <> ();
+        
+        for (Vertex vertex : vertices) {
+            if (this.vertices.containsKey (vertex.getId ())) {
+                continue; // Vertex already in graph
+            }
+            
+            for (Edge edge : vertex.getEdges ().values ()) {
+                if (this.vertices.containsKey (edge.S.getId ())) {
+                    neighbours.add (vertex);
+                    break;
+                }
+            }
+        }
+        
+        return neighbours;
+    }
+    
+    public Set <Edge> getNeighboursE (Collection <Edge> edges) {
+        final Set <Edge> neighbours = new HashSet <> ();
+        
+        for (Edge edge : edges) {
+            int f = vertices.containsKey (edge.F.id) ? 1 : 0;
+            int s = vertices.containsKey (edge.S.id) ? 1 : 0;
+            if (f == 1 && s == 0) { neighbours.add (edge); }
+        }
+        
+        return neighbours;
     }
     
     /**
