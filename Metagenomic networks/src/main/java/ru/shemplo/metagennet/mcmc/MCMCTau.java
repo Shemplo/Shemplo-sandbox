@@ -13,10 +13,11 @@ import ru.shemplo.metagennet.graph.GraphDescriptor;
 import ru.shemplo.metagennet.graph.Vertex;
 
 @RequiredArgsConstructor
-public class MCMCDefault implements MCMC {
+public class MCMCTau implements MCMC {
     
     public static final double BETA_A_V = 0.2, BETA_B_V = 1;
     public static final double BETA_A_E = 0.1, BETA_B_E = 1;
+    public static final double TAU = 10e-7;
     
     @Getter protected GraphDescriptor currentGraph;
     protected final GraphDescriptor initialGraph;
@@ -57,7 +58,7 @@ public class MCMCDefault implements MCMC {
             iteration += 1; return;
         }
         
-        double pS = currentGraph.getLikelihood (BETA_A_V, BETA_A_E, true);
+        double pS = 0, pSs = 0;
         //System.out.println (pS);
         
         //int candidatIndex = RANDOM.nextInt (initialGraphEdges.size ());
@@ -67,34 +68,33 @@ public class MCMCDefault implements MCMC {
         //System.out.println (currentGraph);
         //System.out.println (candidat);
         
-        double qS2Ss = 0, qSs2S = 0;
         if (currentGraph.getEdges ().contains (candidat)) {
             //System.out.println ("remove");
             if (!currentGraph.removeEdge (candidat).isConnected (true, false)) {
                 currentGraph.rollback (); return;
             }
             //System.out.println ("connected");
-            
-            qSs2S = 1.0 / (currentGraph.getInnerEdges (true).size ());
-            qS2Ss = 1.0 / (currentGraph.getOuterEdges (false).size ());
+            pS = currentGraph.getLikelihood (BETA_A_V, BETA_A_E, false);
+            pSs = Math.pow (TAU, BETA_A_E + BETA_A_V);
         } else {
             //System.out.println ("add");
             if (!currentGraph.addEdge (candidat).isConnected (true, false)) {
                 currentGraph.rollback (); return;
             }
             //System.out.println ("connected");
-            
-            qSs2S = 1.0 / (currentGraph.getInnerEdges (false).size ());
-            qS2Ss = 1.0 / (currentGraph.getOuterEdges (true).size ());
+            pSs = currentGraph.getLikelihood (BETA_A_V, BETA_A_E, false);
+            pS = Math.pow (TAU, BETA_A_E + BETA_A_V);
         }
+        
+        double mod = currentGraph.getCloseEdges (true) .size ()
+                   / currentGraph.getCloseEdges (false).size ();
         
         //System.out.println (currentGraph.getInnerEdges ().size ());
         //System.out.println (currentGraph.getOuterEdges ().size ());
         
-        double pSs = currentGraph.getLikelihood (BETA_A_V, BETA_A_E, false);
         //System.out.println (pSs);
         if (idling) { pSs = 1.0; pS = 1.0; } // do not consider likelihood
-        double rho = Math.min (1.0, (pSs / pS) * (qSs2S / qS2Ss));
+        double rho = Math.min (1.0, (pSs / pS) * mod);
         //System.out.println ("Rho: " + rho);
         
         //System.out.println (rho);

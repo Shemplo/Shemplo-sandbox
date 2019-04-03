@@ -1,10 +1,11 @@
 package ru.shemplo.metagennet.graph;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import ru.shemplo.metagennet.mcmc.MCMC;
+import ru.shemplo.metagennet.mcmc.MCMCDefault;
 import ru.shemplo.snowball.stuctures.Pair;
 
 @RequiredArgsConstructor
@@ -15,27 +16,27 @@ public class Graph {
     @Getter private Map <Pair <Vertex, Vertex>, Edge> edges = new HashMap <> ();
     @Getter private Map <Integer, Vertex> vertices = new HashMap <> ();
     
-    @Override
-    public String toString () {
-        StringJoiner sj = new StringJoiner ("\n");
-        
-        List <Integer> verts = vertices.values ().stream ()
-                             . map     (Vertex::getId)
-                             . collect (Collectors.toList ());
-        sj.add (String.format ("Graph #%d", hashCode ()));
-        sj.add (String.format (" Verticies : %s", verts.toString ()));
-        
-        List <String> eds = edges.values ().stream ().map (Edge::toString)
-                          . collect (Collectors.toList ());
-        sj.add (String.format (" Edges (%2d): %s", eds.size (), eds.toString ()));
-        sj.add ("");
-        
-        return sj.toString ();
-    }
-    
     public GraphDescriptor getEmptyDescriptor () {
         GraphDescriptor descriptor = new GraphDescriptor (this, new HashSet <> (), new HashSet <> ());
         return descriptor.addEdge (descriptor.selectRandomEdgeFromGraph ()).commit ();
+    }
+    
+    public GraphDescriptor getFixedDescriptor (int verts) {
+        MCMC mcmc = new MCMCDefault (getEmptyDescriptor (), 1000000);
+        mcmc.makeIteration (true);
+        
+        while (mcmc.getCurrentGraph ().getVertices ().size () < verts 
+                    && !mcmc.finishedWork ()) {
+            mcmc.makeIteration (true);
+        }
+        
+        return mcmc.getCurrentGraph ();
+    }
+    
+    public GraphDescriptor getFullDescriptor () {
+        Set <Vertex> vertices = new HashSet <> (this.vertices.values ());
+        Set <Edge> edges = new HashSet <> (this.edges.values ());
+        return new GraphDescriptor (this, vertices, edges);
     }
     
     public void addVertex (int id, Double weight) {

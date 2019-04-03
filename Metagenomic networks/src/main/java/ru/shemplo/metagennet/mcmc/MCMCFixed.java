@@ -13,7 +13,7 @@ import ru.shemplo.metagennet.graph.GraphDescriptor;
 import ru.shemplo.metagennet.graph.Vertex;
 
 @RequiredArgsConstructor
-public class MCMCDefault implements MCMC {
+public class MCMCFixed implements MCMC {
     
     public static final double BETA_A_V = 0.2, BETA_B_V = 1;
     public static final double BETA_A_E = 0.1, BETA_B_E = 1;
@@ -63,30 +63,15 @@ public class MCMCDefault implements MCMC {
         //int candidatIndex = RANDOM.nextInt (initialGraphEdges.size ());
         //Edge candidat = initialGraphEdges.get (candidatIndex);
         //System.out.print (candidat + " / " + opposite + " - ");
-        Edge candidat = currentGraph.selectRandomEdgeFromHedgehog ();
+        Edge candidatIn  = currentGraph.selectRandomEdgeFromSunRays (),
+             candidatOut = currentGraph.selectRandomEdgeFromPotato ();
         //System.out.println (currentGraph);
         //System.out.println (candidat);
         
         double qS2Ss = 0, qSs2S = 0;
-        if (currentGraph.getEdges ().contains (candidat)) {
-            //System.out.println ("remove");
-            if (!currentGraph.removeEdge (candidat).isConnected (true, false)) {
-                currentGraph.rollback (); return;
-            }
-            //System.out.println ("connected");
-            
-            qSs2S = 1.0 / (currentGraph.getInnerEdges (true).size ());
-            qS2Ss = 1.0 / (currentGraph.getOuterEdges (false).size ());
-        } else {
-            //System.out.println ("add");
-            if (!currentGraph.addEdge (candidat).isConnected (true, false)) {
-                currentGraph.rollback (); return;
-            }
-            //System.out.println ("connected");
-            
-            qSs2S = 1.0 / (currentGraph.getInnerEdges (false).size ());
-            qS2Ss = 1.0 / (currentGraph.getOuterEdges (true).size ());
-        }
+        qS2Ss = currentGraph.getOuterEdges (true).size ();
+        currentGraph.addEdge (candidatIn).removeEdge (candidatOut);
+        qS2Ss = currentGraph.getOuterEdges (false).size ();
         
         //System.out.println (currentGraph.getInnerEdges ().size ());
         //System.out.println (currentGraph.getOuterEdges ().size ());

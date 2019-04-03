@@ -16,7 +16,7 @@ public class AdjMatrixGraphReader implements GraphReader {
     
     @Override
     public Graph readGraph () throws IOException {
-        final Path path = Paths.get ("runtime/graph_good.csv");
+        final Path path = Paths.get ("runtime/graph.csv");
         List <List <Double>> matrix = new ArrayList <> ();
         try (
             BufferedReader br = Files.newBufferedReader (path);
@@ -40,7 +40,9 @@ public class AdjMatrixGraphReader implements GraphReader {
         for (int i = 0; i < matrix.size (); i++) {
             for (int j = i + 1; j < matrix.size (); j++) {
                 double weight = matrix.get (i).get (j);
-                graph.addEdge (i, j, weight);
+                if (weight > 0) {
+                    graph.addEdge (i, j, weight);
+                }
             }
         }
         

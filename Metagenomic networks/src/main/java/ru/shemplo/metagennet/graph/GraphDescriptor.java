@@ -44,6 +44,37 @@ public class GraphDescriptor implements Cloneable {
         return sj.toString ();
     }
     
+    public String toDot () {
+        StringJoiner sj = new StringJoiner ("\n");
+        sj.add ("graph finite_state_machine {");
+        sj.add ("    rankdir=LR;");
+        sj.add ("    size=\"64\";");
+        sj.add ("    node [shape = doublecircle];");
+        sj.add ("    node [color = red];");
+        for (Vertex vertex : vertices) {
+            sj.add (String.format ("    V%d;", vertex.getId ()));
+        }
+        
+        sj.add ("    node [shape = circle];");
+        sj.add ("    node [color = black];");
+        
+        for (Edge edge : graph.getEdges ().values ()) {
+            if (edge.F.getId () > edge.S.getId ()) { continue; }
+            
+            String appendix = "";
+            if (vertices.contains (edge.F) && vertices.contains (edge.S)) {
+                appendix = "[color = red]";
+            }
+            sj.add (String.format ("    V%d -- V%d [label = \"%f\"]%s;", 
+                    edge.F.getId (), edge.S.getId (),
+                    edge.getWeight (), appendix));
+        }
+        
+        sj.add ("}");
+        
+        return sj.toString ();
+    }
+    
     private static final Edge STUB_EDGE = new Edge (null, null, 1.0);
     private static final Vertex STUB_VERTEX = new Vertex (0, 1.0);
     private static final Random R = new Random ();
@@ -53,6 +84,7 @@ public class GraphDescriptor implements Cloneable {
         double pV1 = Optional.ofNullable (stable ? pmVA : lmVA).orElse (STUB_VERTEX).getWeight ();
         double pV2 = Optional.ofNullable (stable ? pmVB : lmVB).orElse (STUB_VERTEX).getWeight ();
         
+        //System.out.println (pmEA + " " + lmEA.getWeight ());
         //System.out.println (pE + " " + pV1 + " " + pV2);
         double result = betaAE * Math.pow (pE, betaAE);
         if (pV1 >= 0) {
@@ -63,6 +95,10 @@ public class GraphDescriptor implements Cloneable {
         }
         
         return result;
+    }
+    
+    public double getModuleLikelihood (double betaAV, double betaAE, boolean stable) {
+        throw new UnsupportedOperationException ("Not implemented yet");
     }
     
     public GraphDescriptor commit () {
@@ -223,6 +259,21 @@ public class GraphDescriptor implements Cloneable {
         return notCovered == null || ignoreIfOneSingle;
     }
     
+    public List <Vertex> getVertices (boolean stable) {
+        if (stable) { return new ArrayList <> (vertices); }
+        
+        Set <Vertex> result = new HashSet <> (vertices);
+        vertexToChange.forEach (vertex -> {
+            if (result.contains (vertex)) {
+                result.remove (vertex);
+            } else {
+                result.add (vertex);
+            }
+        });
+        
+        return new ArrayList <> (result);
+    }
+    
     public List <Edge> getInnerEdges (boolean stable) {
         // for the graph without (edge|vertex)ToChange
         if (stable) { return new ArrayList <> (edges); }
@@ -239,29 +290,19 @@ public class GraphDescriptor implements Cloneable {
         return new ArrayList <> (result);
     }
     
-    public List <Edge> getOuterEdges (boolean stable) {
-        if (stable) { // for the graph without (edge|vertex)ToChange
-            final List <Edge> edges = new ArrayList <> ();
-            graph.getEdges ().forEach ((pair, edge) -> {
-                boolean containsA1 = vertices.contains (edge.F),
-                        containsB1 = vertices.contains (edge.S);
-                int a = containsA1 ? 1 : 0, b = containsB1 ? 1 : 0;
-                if (((a + b) & 1) == 1) { edges.add (edge); } // a + b % 2 == 1
-            });
-            
-            return edges;
+    public Set <Edge> getCloseEdges (boolean stable) {
+        Set <Edge> edges = new HashSet <> ();
+        for (Vertex vertex : getVertices (stable)) {
+            edges.addAll (vertex.getEdges ().values ());
         }
         
-        final List <Edge> edges = new ArrayList <> ();
-        graph.getEdges ().forEach ((pair, edge) -> {
-            boolean containsA1 = vertices.contains (edge.F), containsA2 = vertexToChange.contains (edge.F),
-                    containsB1 = vertices.contains (edge.S), containsB2 = vertexToChange.contains (edge.S);
-            int a = (containsA1 && !containsA2) || (!containsA1 && containsA2) ? 1 : 0,
-                b = (containsB1 && !containsB2) || (!containsB1 && containsB2) ? 1 : 0;
-            if (((a + b) & 1) == 1) { edges.add (edge); } // a + b % 2 == 1
-        });
-        
         return edges;
+    }
+    
+    public List <Edge> getOuterEdges (boolean stable) {
+        Set <Edge> edges = getCloseEdges (stable);
+        edges.removeAll (getInnerEdges (stable));
+        return new ArrayList <> (edges);
     }
     
     public Edge selectRandomEdgeFromGraph () {
@@ -273,10 +314,20 @@ public class GraphDescriptor implements Cloneable {
         return null; // impossible
     }
     
+    public Edge selectRandomEdgeFromSunRays () {
+        final List <Edge> edges = getOuterEdges (true);
+        return edges.get (R.nextInt (edges.size ()));
+    }
+    
     public Edge selectRandomEdgeFromHedgehog () {
         List <Edge> edges = getInnerEdges (true);
         edges.addAll (getOuterEdges (true));
         
+        return edges.get (R.nextInt (edges.size ()));
+    }
+    
+    public Edge selectRandomEdgeFromPotato () {
+        final List <Edge> edges = getInnerEdges (true);
         return edges.get (R.nextInt (edges.size ()));
     }
     
