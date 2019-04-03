@@ -1,26 +1,26 @@
 package ru.shemplo.metagennet.mcmc;
 
-import static  ru.shemplo.metagennet.GraphGenerator.*;
 import static ru.shemplo.metagennet.RunMetaGenMCMC.*;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import ru.shemplo.metagennet.graph.Graph;
-import ru.shemplo.metagennet.graph.Graph.Edge;
-import ru.shemplo.metagennet.graph.Graph.Vertex;
+import ru.shemplo.metagennet.graph.Edge;
+import ru.shemplo.metagennet.graph.GraphDescriptor;
+import ru.shemplo.metagennet.graph.Vertex;
 
 @RequiredArgsConstructor
 public class MCMCDefault implements MCMC {
     
-    protected final Graph initialGraph;
+    public static final double BETA_A_V = 0.2, BETA_B_V = 1;
+    public static final double BETA_A_E = 0.1, BETA_B_E = 1;
     
+    @Getter protected GraphDescriptor currentGraph;
+    protected final GraphDescriptor initialGraph;
     protected List <Edge> initialGraphEdges;
-    @Getter protected Graph currentGraph;
     
     protected final int iterations;
     protected int iteration = 0;
@@ -41,7 +41,8 @@ public class MCMCDefault implements MCMC {
             
             int limit = (int) (iterations * 0.9);
             if (iteration >= limit && iteration % 50 == 0) {
-                snapshots.add (new HashSet <> (currentGraph.getVertices ().values ()));
+                snapshots.add (currentGraph.getVertices ());
+                //System.out.println (currentGraph);
             }
             //System.out.println (currentGraph.getEdges ());
         }
@@ -52,46 +53,56 @@ public class MCMCDefault implements MCMC {
         if (finishedWork ()) { return; }
         
         if (iteration == 0) {
-            initialGraphEdges = new ArrayList <> (initialGraph.getEdges ());
-            currentGraph = initialGraph.getInitialSubgraph ();
+            currentGraph = initialGraph;
             iteration += 1; return;
         }
         
-        double pS = currentGraph.getLikelihood (BETA_A_V, BETA_A_E);
+        double pS = currentGraph.getLikelihood (BETA_A_V, BETA_A_E, true);
+        //System.out.println (pS);
         
-        int candidatIndex = RANDOM.nextInt (initialGraphEdges.size ());
-        Edge candidat = initialGraphEdges.get (candidatIndex);
-        Edge opposite = initialGraph.getOpposite (candidat);
+        //int candidatIndex = RANDOM.nextInt (initialGraphEdges.size ());
+        //Edge candidat = initialGraphEdges.get (candidatIndex);
         //System.out.print (candidat + " / " + opposite + " - ");
+        Edge candidat = currentGraph.selectRandomEdgeFromHedgehog ();
+        //System.out.println (currentGraph);
+        //System.out.println (candidat);
         
-        Graph suggestedGraph = null;
         double qS2Ss = 0, qSs2S = 0;
         if (currentGraph.getEdges ().contains (candidat)) {
             //System.out.println ("remove");
-            try {
-                suggestedGraph = currentGraph.removeEdges (true, candidat, opposite);
-            } catch (IllegalStateException ise) { return; }
+            if (!currentGraph.removeEdge (candidat).isConnected (true, false)) {
+                currentGraph.rollback (); return;
+            }
+            //System.out.println ("connected");
             
-            qSs2S = 1.0 / (currentGraph.getNumberOfInnerEdges (initialGraphEdges));
-            qS2Ss = 1.0 / (suggestedGraph.getNumberOfOuterEdges (initialGraphEdges));
+            qSs2S = 1.0 / (currentGraph.getInnerEdges (true).size ());
+            qS2Ss = 1.0 / (currentGraph.getOuterEdges (false).size ());
         } else {
             //System.out.println ("add");
-            try {
-                suggestedGraph = currentGraph.addEdges (true, candidat, opposite);
-            } catch (IllegalStateException ise) { return; }
+            if (!currentGraph.addEdge (candidat).isConnected (true, false)) {
+                currentGraph.rollback (); return;
+            }
+            //System.out.println ("connected");
             
-            qSs2S = 1.0 / (suggestedGraph.getNumberOfInnerEdges (initialGraphEdges));
-            qS2Ss = 1.0 / (currentGraph.getNumberOfOuterEdges (initialGraphEdges));
+            qSs2S = 1.0 / (currentGraph.getInnerEdges (false).size ());
+            qS2Ss = 1.0 / (currentGraph.getOuterEdges (true).size ());
         }
         
-        double pSs = suggestedGraph.getLikelihood (BETA_A_V, BETA_A_E);
+        //System.out.println (currentGraph.getInnerEdges ().size ());
+        //System.out.println (currentGraph.getOuterEdges ().size ());
+        
+        double pSs = currentGraph.getLikelihood (BETA_A_V, BETA_A_E, false);
         if (idling) { pSs = 1.0; pS = 1.0; } // do not consider likelihood
         double rho = Math.min (1.0, (pSs / pS) * (qSs2S / qS2Ss));
         //System.out.println ("Rho: " + rho);
         
+        //System.out.println (rho);
         if (RANDOM.nextDouble () <= rho) {
+            currentGraph.isConnected (true, true);
             //System.out.println ("Applied");
-            currentGraph = suggestedGraph;
+            currentGraph.commit ();
+        } else {
+            currentGraph.rollback ();
         }
         
         //System.out.println (currentGraph);

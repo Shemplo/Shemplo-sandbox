@@ -5,20 +5,22 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
+import ru.shemplo.metagennet.graph.Edge;
 import ru.shemplo.metagennet.graph.Graph;
-import ru.shemplo.metagennet.graph.Graph.Edge;
-import ru.shemplo.metagennet.graph.Graph.Vertex;
-import ru.shemplo.metagennet.graph.GraphModules;
+import ru.shemplo.metagennet.graph.Vertex;
 import ru.shemplo.snowball.stuctures.Pair;
 import ru.shemplo.snowball.utils.StringManip;
 
-public class CSVGraphReader {
+public class CSVGraphReader implements GraphReader {
     
+    @Override
     public Graph readGraph () throws IOException {
         Pair <List <String>, List <List <String>>> verticesCSV = readCSV ("runtime/vertices.csv");
         Pair <List <String>, List <List <String>>> edgesCSV = readCSV ("runtime/edges.csv");
@@ -36,9 +38,7 @@ public class CSVGraphReader {
             }))
             . collect (Collectors.toMap (Pair::getF, Pair::getS));
         
-        Graph graph = new Graph (new HashMap <> (), new GraphModules (), new HashSet <> ());
-        final AtomicReference <Graph> ref = new AtomicReference <> (graph);
-        
+        Graph graph = new Graph (false);
         edgesCSV.S.forEach (edge -> {
             String from = edge.get (1), to = edge.get (2);
             Double weight = null;
@@ -47,11 +47,10 @@ public class CSVGraphReader {
             catch (NumberFormatException nfe) { weight = 1D; }
             
             Edge edgeI = new Edge (vertices.get (from), vertices.get (to), weight);
-            ref.set (ref.get ().addEdges (false, edgeI, edgeI.swap ()));
+            graph.addEdge (edgeI);
         });
         
-        ref.get ().setInitial (true);
-        return ref.get ();
+        return graph;
     }
     
     private Pair <List <String>, List <List <String>>> readCSV (String filepath) throws IOException {

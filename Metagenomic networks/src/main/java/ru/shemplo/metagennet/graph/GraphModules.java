@@ -7,7 +7,6 @@ import java.util.Set;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import ru.shemplo.metagennet.graph.Graph.Vertex;
 
 public class GraphModules {
     

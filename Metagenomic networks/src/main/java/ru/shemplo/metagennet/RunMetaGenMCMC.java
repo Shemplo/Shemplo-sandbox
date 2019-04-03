@@ -5,7 +5,9 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import ru.shemplo.metagennet.graph.Graph;
-import ru.shemplo.metagennet.io.CSVGraphReader;
+import ru.shemplo.metagennet.graph.GraphDescriptor;
+import ru.shemplo.metagennet.io.AdjMatrixGraphReader;
+import ru.shemplo.metagennet.io.GraphReader;
 import ru.shemplo.metagennet.mcmc.MCMC;
 import ru.shemplo.metagennet.mcmc.MCMCDefault;
 import ru.shemplo.snowball.stuctures.Pair;
@@ -20,7 +22,7 @@ public class RunMetaGenMCMC {
     public static void main (String ... args) throws IOException {
         Locale.setDefault (Locale.ENGLISH);
         
-        CSVGraphReader reader = new CSVGraphReader ();
+        GraphReader reader = new AdjMatrixGraphReader ();
         Graph initial = reader.readGraph ();
         System.out.println (initial);
         
@@ -28,18 +30,16 @@ public class RunMetaGenMCMC {
         //List <List <Double>> graphMatrix = readMatrix (GraphGenerator.GEN_FILE);
         //Graph initial = new Graph (graphMatrix, null);
         
-        for (int i = 0; i < 1000; i++) {
-            Graph copy = initial.makeCopy ();
-            copy.setInitial (true);
-            
-            MCMC singleRun = new MCMCDefault (copy, 1000);
+        for (int i = 0; i < 10; i++) {
+            GraphDescriptor descriptor = initial.getEmptyDescriptor ();
+            MCMC singleRun = new MCMCDefault (descriptor, 10000);
             singleRun.doAllIterations (false);
             
-            Graph graph = singleRun.getCurrentGraph ();
-            graph.getVertices ().forEach ((id, __) -> 
-                occurrences.compute (id, (___, v) -> v == null ? 1 : v + 1)
+            GraphDescriptor graph = singleRun.getCurrentGraph ();
+            graph.getVertices ().forEach (vertex -> 
+                occurrences.compute (vertex.getId (), (___, v) -> v == null ? 1 : v + 1)
             );
-            //System.out.println (graph);
+            System.out.println (i + " " + graph);
             
             singleRun.getSnapshots ().forEach (gph -> {
                 gph.forEach (vertex -> 
@@ -52,7 +52,7 @@ public class RunMetaGenMCMC {
                 System.out.print ("=");
             }
         }
-        System.out.println ();
+        System.out.println ("=");
         
         double sum = occurrences.values ().stream ().mapToDouble (v -> v).sum ();
         occurrences.keySet ().forEach (key -> {

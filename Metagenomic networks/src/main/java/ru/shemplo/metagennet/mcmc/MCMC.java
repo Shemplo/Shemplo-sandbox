@@ -3,8 +3,8 @@ package ru.shemplo.metagennet.mcmc;
 import java.util.List;
 import java.util.Set;
 
-import ru.shemplo.metagennet.graph.Graph;
-import ru.shemplo.metagennet.graph.Graph.Vertex;
+import ru.shemplo.metagennet.graph.GraphDescriptor;
+import ru.shemplo.metagennet.graph.Vertex;
 
 public interface MCMC {
     
@@ -12,7 +12,7 @@ public interface MCMC {
     
     public boolean finishedWork ();
     
-    public Graph getCurrentGraph ();
+    public GraphDescriptor getCurrentGraph ();
     
     public List <Set <Vertex>> getSnapshots ();
     
