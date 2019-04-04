@@ -4,6 +4,7 @@ import java.util.*;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 import ru.shemplo.metagennet.mcmc.MCMC;
 import ru.shemplo.metagennet.mcmc.MCMCDefault;
 import ru.shemplo.snowball.stuctures.Pair;
@@ -15,14 +16,15 @@ public class Graph {
     
     @Getter private Map <Pair <Vertex, Vertex>, Edge> edges = new HashMap <> ();
     @Getter private Map <Integer, Vertex> vertices = new HashMap <> ();
+    @Getter @Setter private GraphModules modules = new GraphModules ();
     
-    public GraphDescriptor getEmptyDescriptor () {
-        GraphDescriptor descriptor = new GraphDescriptor (this, new HashSet <> (), new HashSet <> ());
+    public GraphDescriptor getEmptyDescriptor (boolean useSignal) {
+        GraphDescriptor descriptor = new GraphDescriptor (useSignal, this, new HashSet <> (), new HashSet <> ());
         return descriptor.addEdge (descriptor.selectRandomEdgeFromGraph ()).commit ();
     }
     
-    public GraphDescriptor getFixedDescriptor (int verts) {
-        MCMC mcmc = new MCMCDefault (getEmptyDescriptor (), 1000000);
+    public GraphDescriptor getFixedDescriptor (int verts, boolean useSignal) {
+        MCMC mcmc = new MCMCDefault (getEmptyDescriptor (useSignal), 1000000);
         mcmc.makeIteration (true);
         
         while (mcmc.getCurrentGraph ().getVertices ().size () < verts 
@@ -33,10 +35,10 @@ public class Graph {
         return mcmc.getCurrentGraph ();
     }
     
-    public GraphDescriptor getFullDescriptor () {
+    public GraphDescriptor getFullDescriptor (boolean useSignal) {
         Set <Vertex> vertices = new HashSet <> (this.vertices.values ());
         Set <Edge> edges = new HashSet <> (this.edges.values ());
-        return new GraphDescriptor (this, vertices, edges);
+        return new GraphDescriptor (useSignal, this, vertices, edges);
     }
     
     public void addVertex (int id, Double weight) {

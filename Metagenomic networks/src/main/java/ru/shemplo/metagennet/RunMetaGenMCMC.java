@@ -9,7 +9,7 @@ import ru.shemplo.metagennet.graph.GraphDescriptor;
 import ru.shemplo.metagennet.io.AdjMatrixGraphReader;
 import ru.shemplo.metagennet.io.GraphReader;
 import ru.shemplo.metagennet.mcmc.MCMC;
-import ru.shemplo.metagennet.mcmc.MCMCTau;
+import ru.shemplo.metagennet.mcmc.MCMCDefault;
 import ru.shemplo.snowball.stuctures.Pair;
 import ru.shemplo.snowball.utils.StringManip;
 
@@ -28,7 +28,7 @@ public class RunMetaGenMCMC {
         try (
             PrintWriter pw = new PrintWriter (new File ("runtime/temp.dot"));
         ) {
-            GraphDescriptor full = initial.getFullDescriptor ();
+            GraphDescriptor full = initial.getFullDescriptor (false);
             pw.println (full.toDot ());
         }
         
@@ -36,7 +36,7 @@ public class RunMetaGenMCMC {
         //List <List <Double>> graphMatrix = readMatrix (GraphGenerator.GEN_FILE);
         //Graph initial = new Graph (graphMatrix, null);
         
-        int tries = 1000;
+        int tries = 1000 / 2;
         StringJoiner sj = new StringJoiner ("=");
         for (int i = 0; i < tries / 50; i++) {
             sj.add ("-----");
@@ -46,8 +46,8 @@ public class RunMetaGenMCMC {
         System.out.println ("=");
         
         for (int i = 0; i < tries; i++) {
-            GraphDescriptor descriptor = initial.getFixedDescriptor (5);
-            MCMC singleRun = new MCMCTau (descriptor, 100000);
+            GraphDescriptor descriptor = initial.getFixedDescriptor (5, true);
+            MCMC singleRun = new MCMCDefault (descriptor, 10000);
             singleRun.doAllIterations (false);
             
             GraphDescriptor graph = singleRun.getCurrentGraph ();

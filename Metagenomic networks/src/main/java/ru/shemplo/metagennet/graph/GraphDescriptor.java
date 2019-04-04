@@ -11,6 +11,7 @@ import ru.shemplo.snowball.stuctures.Pair;
 @RequiredArgsConstructor (access = AccessLevel.PACKAGE)
 public class GraphDescriptor implements Cloneable {
     
+    private final boolean signal;
     private final Graph graph;
     
     @Getter private final Set <Vertex> vertices;
@@ -98,7 +99,21 @@ public class GraphDescriptor implements Cloneable {
     }
     
     public double getModuleLikelihood (double betaAV, double betaAE, boolean stable) {
-        throw new UnsupportedOperationException ("Not implemented yet");
+        double pE  = Optional.ofNullable (stable ? pmEA : lmEA).orElse (STUB_EDGE)  .getWeight ();
+        double pV1 = Optional.ofNullable (stable ? pmVA : lmVA).orElse (STUB_VERTEX).getWeight ();
+        double pV2 = Optional.ofNullable (stable ? pmVB : lmVB).orElse (STUB_VERTEX).getWeight ();
+        
+        //System.out.println (pmEA + " " + lmEA.getWeight ());
+        //System.out.println (pE + " " + pV1 + " " + pV2);
+        double result = betaAE * Math.pow (pE, betaAE);
+        if (pV1 >= 0) {
+            result *= betaAV * Math.pow (pV1, betaAV);
+        }
+        if (pV2 >= 0) {
+            result *= betaAV * Math.pow (pV2, betaAV);
+        }
+        
+        return result;
     }
     
     public GraphDescriptor commit () {
