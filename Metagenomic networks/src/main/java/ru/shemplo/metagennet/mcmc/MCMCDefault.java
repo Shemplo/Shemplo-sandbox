@@ -57,7 +57,7 @@ public class MCMCDefault implements MCMC {
             iteration += 1; return;
         }
         
-        double pS = currentGraph.getLikelihood (BETA_A_V, BETA_A_E, true);
+        double pS = currentGraph.getModuleLikelihood (BETA_A_V, BETA_A_E, true);
         //System.out.println (pS);
         
         //int candidatIndex = RANDOM.nextInt (initialGraphEdges.size ());
@@ -91,7 +91,7 @@ public class MCMCDefault implements MCMC {
         //System.out.println (currentGraph.getInnerEdges ().size ());
         //System.out.println (currentGraph.getOuterEdges ().size ());
         
-        double pSs = currentGraph.getLikelihood (BETA_A_V, BETA_A_E, false);
+        double pSs = currentGraph.getModuleLikelihood (BETA_A_V, BETA_A_E, false);
         //System.out.println (pSs);
         if (idling) { pSs = 1.0; pS = 1.0; } // do not consider likelihood
         double rho = Math.min (1.0, (pSs / pS) * (qSs2S / qS2Ss));

@@ -6,8 +6,8 @@ import java.util.stream.Collectors;
 
 import ru.shemplo.metagennet.graph.Graph;
 import ru.shemplo.metagennet.graph.GraphDescriptor;
-import ru.shemplo.metagennet.io.AdjMatrixGraphReader;
 import ru.shemplo.metagennet.io.GraphReader;
+import ru.shemplo.metagennet.io.MelanomaGraphReader;
 import ru.shemplo.metagennet.mcmc.MCMC;
 import ru.shemplo.metagennet.mcmc.MCMCDefault;
 import ru.shemplo.snowball.stuctures.Pair;
@@ -22,7 +22,7 @@ public class RunMetaGenMCMC {
     public static void main (String ... args) throws IOException {
         Locale.setDefault (Locale.ENGLISH);
         
-        GraphReader reader = new AdjMatrixGraphReader ();
+        GraphReader reader = new MelanomaGraphReader ();
         Graph initial = reader.readGraph ();
        
         try (
@@ -36,7 +36,7 @@ public class RunMetaGenMCMC {
         //List <List <Double>> graphMatrix = readMatrix (GraphGenerator.GEN_FILE);
         //Graph initial = new Graph (graphMatrix, null);
         
-        int tries = 1000 / 2;
+        int tries = 100;
         StringJoiner sj = new StringJoiner ("=");
         for (int i = 0; i < tries / 50; i++) {
             sj.add ("-----");
@@ -47,14 +47,14 @@ public class RunMetaGenMCMC {
         
         for (int i = 0; i < tries; i++) {
             GraphDescriptor descriptor = initial.getFixedDescriptor (5, true);
-            MCMC singleRun = new MCMCDefault (descriptor, 10000);
+            MCMC singleRun = new MCMCDefault (descriptor, 1000);
             singleRun.doAllIterations (false);
             
             GraphDescriptor graph = singleRun.getCurrentGraph ();
             graph.getVertices ().forEach (vertex -> 
                 occurrences.compute (vertex.getId (), (___, v) -> v == null ? 1 : v + 1)
             );
-            //System.out.println (i + " " + graph);
+            System.out.println (i + " " + graph);
             
             singleRun.getSnapshots ().forEach (gph -> {
                 gph.forEach (vertex -> 

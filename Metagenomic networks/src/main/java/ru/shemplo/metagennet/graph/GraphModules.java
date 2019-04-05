@@ -4,6 +4,7 @@ import static java.util.stream.Collectors.*;
 
 import java.util.*;
 
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -36,9 +37,16 @@ public class GraphModules {
         return modules.get (vertex.getId ()).getLikelihood ();
     }
     
+    public GraphModule getModule (Vertex vertex) {
+        if (vertex == null) { return null; }
+        return modules.get (vertex.getId ());
+    }
+    
     @RequiredArgsConstructor
+    @EqualsAndHashCode (exclude = {"likelihood"})
     public static class GraphModule {
         
+        @Getter
         private final Set <Vertex> vertices;
         
         @Getter @NonNull

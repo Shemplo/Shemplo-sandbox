@@ -6,11 +6,13 @@ import java.util.stream.Collectors;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import ru.shemplo.metagennet.graph.GraphModules.GraphModule;
 import ru.shemplo.snowball.stuctures.Pair;
 
 @RequiredArgsConstructor (access = AccessLevel.PACKAGE)
 public class GraphDescriptor implements Cloneable {
     
+    @SuppressWarnings ("unused")
     private final boolean signal;
     private final Graph graph;
     
@@ -99,18 +101,50 @@ public class GraphDescriptor implements Cloneable {
     }
     
     public double getModuleLikelihood (double betaAV, double betaAE, boolean stable) {
-        double pE  = Optional.ofNullable (stable ? pmEA : lmEA).orElse (STUB_EDGE)  .getWeight ();
-        double pV1 = Optional.ofNullable (stable ? pmVA : lmVA).orElse (STUB_VERTEX).getWeight ();
-        double pV2 = Optional.ofNullable (stable ? pmVB : lmVB).orElse (STUB_VERTEX).getWeight ();
+        final GraphModules modules = graph.getModules ();
+        Set <GraphModule> modulesV = new HashSet <> ();
+        double result = 1.0d;
         
-        //System.out.println (pmEA + " " + lmEA.getWeight ());
-        //System.out.println (pE + " " + pV1 + " " + pV2);
-        double result = betaAE * Math.pow (pE, betaAE);
-        if (pV1 >= 0) {
-            result *= betaAV * Math.pow (pV1, betaAV);
+        for (Vertex vertex : vertices) {
+            if (!stable && vertexToChange.contains (vertex)) { continue; }
+            
+            GraphModule module = modules.getModule (vertex);
+            if (module == null) {
+                result *= vertex.getWeight ();
+                continue;
+            }
+            
+            if (!modulesV.contains (module)) {
+                result *= vertex.getWeight ();
+                modulesV.add (module);
+            }
         }
-        if (pV2 >= 0) {
-            result *= betaAV * Math.pow (pV2, betaAV);
+        
+        for (Edge edge : edges) {
+            if (!stable && edgeToChange.contains (edge)) { continue; }
+            result *= edge.getWeight ();
+        }
+        
+        if (!stable) {
+            for (Vertex vertex : vertexToChange) {
+                if (vertices.contains (vertex)) { continue; }
+                
+                GraphModule module = modules.getModule (vertex);
+                if (module == null) {
+                    result *= vertex.getWeight ();
+                    continue;
+                }
+                
+                if (!modulesV.contains (module)) {
+                    result *= vertex.getWeight ();
+                    modulesV.add (module);
+                }
+            }
+            
+            for (Edge edge : edgeToChange) {
+                if (edges.contains (edge)) { continue; }
+                result *= edge.getWeight ();
+            }
         }
         
         return result;

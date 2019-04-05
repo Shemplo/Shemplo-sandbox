@@ -68,6 +68,8 @@ public class MelanomaGraphReader implements GraphReader {
         try (
             BufferedReader br = Files.newBufferedReader (filepath);
         ) {
+            br.readLine (); // titles
+            
             String line = null;
             while ((line = StringManip.fetchNonEmptyLine (br)) != null) {
                 final StringTokenizer st = new StringTokenizer (line);
