@@ -1,26 +1,31 @@
 package ru.shemplo.metagennet.graph;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import ru.shemplo.metagennet.mcmc.MCMC;
 import ru.shemplo.metagennet.mcmc.MCMCDefault;
-import ru.shemplo.snowball.stuctures.Pair;
 
 @RequiredArgsConstructor
 public class Graph {
     
-    @Getter private final boolean oriented;
+    public static final double BETA_A_V = 0.2, BETA_B_V = 1;
+    public static final double BETA_A_E = 0.1, BETA_B_E = 1;
     
-    @Getter private Map <Pair <Vertex, Vertex>, Edge> edges = new HashMap <> ();
-    @Getter private Map <Integer, Vertex> vertices = new HashMap <> ();
+    @Getter private List <Edge> edgesList = new ArrayList <> ();
+    @Getter private List <Vertex> vertices = new ArrayList <> ();
     @Getter @Setter private GraphModules modules = new GraphModules ();
     
     public GraphDescriptor getEmptyDescriptor (boolean useSignal) {
-        GraphDescriptor descriptor = new GraphDescriptor (useSignal, this, new HashSet <> (), new HashSet <> ());
-        return descriptor.addEdge (descriptor.selectRandomEdgeFromGraph ()).commit ();
+        GraphDescriptor descriptor = new GraphDescriptor (BETA_A_V, BETA_A_E, useSignal, this);
+        Collections.shuffle (edgesList);
+        return descriptor.addEdge (edgesList.get (0))
+             . commit ();
     }
     
     public GraphDescriptor getFixedDescriptor (int verts, boolean useSignal) {
@@ -36,9 +41,11 @@ public class Graph {
     }
     
     public GraphDescriptor getFullDescriptor (boolean useSignal) {
-        Set <Vertex> vertices = new HashSet <> (this.vertices.values ());
-        Set <Edge> edges = new HashSet <> (this.edges.values ());
-        return new GraphDescriptor (useSignal, this, vertices, edges);
+        GraphDescriptor descriptor = new GraphDescriptor (BETA_A_V, BETA_A_E, useSignal, this);
+        descriptor.getVertices ().addAll (vertices); 
+        descriptor.getEdges ().addAll (edgesList);
+        
+        return descriptor;
     }
     
     public void addVertex (int id, Double weight) {
@@ -47,11 +54,15 @@ public class Graph {
     
     public void addVertex (Vertex vertex) {
         int id = vertex.getId ();
-        if (vertices.containsKey (id) && !Objects.equals (vertex, vertices.get (id))) {
+        while (id >= vertices.size ()) {
+            vertices.add (null);
+        }
+        
+        if (vertices.get (id) != null && !Objects.equals (vertex, vertices.get (id))) {
             throw new IllegalArgumentException ("Vertex " + id + " already exists");
         }
         
-        vertices.put (id, vertex);
+        vertices.set (id, vertex);
     }
     
     public void addEdge (int a, int b, Double weight) {
@@ -63,26 +74,17 @@ public class Graph {
     }
     
     public void addEdge (Edge edge) {
-        doAddEdge (edge); // If not oriented then two edges should be added
-        if (!isOriented ()) { doAddEdge (edge.swap ()); }
-    }
-    
-    private void doAddEdge (Edge edge) {
-        Pair <Vertex, Vertex> pair = Pair.mp (edge.F, edge.S);
-        if (edges.containsKey (pair) && !Objects.equals (edge, edges.get (pair))) {
-            throw new IllegalArgumentException ("Edge " + pair + " already exists");
-        }
-        
-        if (!vertices.containsKey (edge.F.getId ())) {
+        if (vertices.get (edge.F.getId ()) == null) {
             addVertex (edge.F);
         }
         
-        if (!vertices.containsKey (edge.S.getId ())) {
+        if (vertices.get (edge.S.getId ()) == null) {
             addVertex (edge.S);
         }
         
         edge.F.getEdges ().put (edge.S, edge);
-        edges.put (pair, edge);
+        edge.S.getEdges ().put (edge.F, edge);
+        edgesList.add (edge);
     }
     
 }

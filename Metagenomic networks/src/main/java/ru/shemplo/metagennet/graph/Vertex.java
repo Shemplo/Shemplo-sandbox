@@ -7,7 +7,6 @@ import lombok.*;
 
 @RequiredArgsConstructor
 @ToString (exclude = "edges")
-@EqualsAndHashCode (exclude = {"edges"})
 public class Vertex {
     
     @Getter private final Map <Vertex, Edge> edges = new HashMap <> ();
@@ -17,8 +16,15 @@ public class Vertex {
     @Getter @Setter
     @NonNull private Double weight;
     
-    public boolean isConnectedWith (Vertex vertex) {
-        return edges.containsKey (vertex);
+    @Override
+    public boolean equals (Object obj) {
+        if (obj == null) { return false; }
+        return hashCode () == obj.hashCode ();
+    }
+    
+    @Override
+    public int hashCode () {
+        return id;
     }
     
 }

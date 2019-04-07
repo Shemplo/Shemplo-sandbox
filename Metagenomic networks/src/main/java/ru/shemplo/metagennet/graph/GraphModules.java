@@ -8,14 +8,12 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import ru.shemplo.snowball.stuctures.Pair;
 
 public class GraphModules {
     
     public static GraphModules splitGraph (Graph graph) {
         GraphModules modules = new GraphModules ();
-        Map <Double, List <Vertex>> mds = graph.getVertices ().entrySet ().stream ()
-                                        . map     (Pair::fromMapEntry).map (Pair::getS)
+        Map <Double, List <Vertex>> mds = graph.getVertices ().stream ()
                                         . collect (groupingBy (Vertex::getWeight));
         mds.forEach ((weight, vertices) -> {
             final Set <Vertex> set = new HashSet <> (vertices);
@@ -39,7 +37,12 @@ public class GraphModules {
     
     public GraphModule getModule (Vertex vertex) {
         if (vertex == null) { return null; }
-        return modules.get (vertex.getId ());
+        return getModule (vertex.getId ());
+    }
+    
+    public GraphModule getModule (Integer vertexID) {
+        if (vertexID == null) { return null; }
+        return modules.get (vertexID);
     }
     
     @RequiredArgsConstructor

@@ -32,7 +32,7 @@ public class AdjMatrixGraphReader implements GraphReader {
             }
         }
         
-        Graph graph = new Graph (false);
+        Graph graph = new Graph ();
         for (int i = 0; i < matrix.size (); i++) {
             graph.addVertex (i, matrix.get (i).get (i));
         }

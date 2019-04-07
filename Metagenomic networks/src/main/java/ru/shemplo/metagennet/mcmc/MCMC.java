@@ -18,4 +18,6 @@ public interface MCMC {
     
     public void makeIteration (boolean idling);
     
+    public int getStarts ();
+    
 }

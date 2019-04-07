@@ -21,7 +21,7 @@ public class MelanomaGraphReader implements GraphReader {
     public Graph readGraph () throws IOException {
         List <Pair <String, String>> edgesDesc = readEdges ();
         Map <String, Double> genesDesc = readGenes ();
-        Graph graph = new Graph (false);
+        Graph graph = new Graph ();
         
         edgesDesc = edgesDesc.stream ()
                   . filter  (pair -> genesDesc.containsKey (pair.F)

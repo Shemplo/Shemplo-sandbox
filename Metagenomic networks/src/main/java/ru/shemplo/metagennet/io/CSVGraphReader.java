@@ -38,7 +38,7 @@ public class CSVGraphReader implements GraphReader {
             }))
             . collect (Collectors.toMap (Pair::getF, Pair::getS));
         
-        Graph graph = new Graph (false);
+        Graph graph = new Graph ();
         edgesCSV.S.forEach (edge -> {
             String from = edge.get (1), to = edge.get (2);
             Double weight = null;

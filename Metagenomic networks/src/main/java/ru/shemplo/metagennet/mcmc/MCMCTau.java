@@ -3,6 +3,7 @@ package ru.shemplo.metagennet.mcmc;
 import static ru.shemplo.metagennet.RunMetaGenMCMC.*;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -42,16 +43,20 @@ public class MCMCTau implements MCMC {
             
             int limit = (int) (iterations * 0.9);
             if (iteration >= limit && iteration % 50 == 0) {
-                snapshots.add (currentGraph.getVertices ());
+                snapshots.add (new HashSet <> (currentGraph.getVertices ()));
                 //System.out.println (currentGraph);
             }
             //System.out.println (currentGraph.getEdges ());
         }
     }
     
+    @Getter private int starts = 0;
+    
     @Override
     public void makeIteration (boolean idling) {
         if (finishedWork ()) { return; }
+        
+        starts += 1;
         
         if (iteration == 0) {
             currentGraph = initialGraph;
@@ -64,30 +69,30 @@ public class MCMCTau implements MCMC {
         //int candidatIndex = RANDOM.nextInt (initialGraphEdges.size ());
         //Edge candidat = initialGraphEdges.get (candidatIndex);
         //System.out.print (candidat + " / " + opposite + " - ");
-        Edge candidat = currentGraph.selectRandomEdgeFromHedgehog ();
+        Edge candidat = currentGraph.getRandomBorderOrInnerEdge ();
         //System.out.println (currentGraph);
         //System.out.println (candidat);
         
+        double qS2Ss = currentGraph.getBorderEdges ();
         if (currentGraph.getEdges ().contains (candidat)) {
             //System.out.println ("remove");
-            if (!currentGraph.removeEdge (candidat).isConnected (true, false)) {
+            if (!currentGraph.removeEdge (candidat).isConnected ()) {
                 currentGraph.rollback (); return;
             }
             //System.out.println ("connected");
-            pS = currentGraph.getLikelihood (BETA_A_V, BETA_A_E, false);
+            pS = currentGraph.getLikelihood ();
             pSs = Math.pow (TAU, BETA_A_E + BETA_A_V);
         } else {
             //System.out.println ("add");
-            if (!currentGraph.addEdge (candidat).isConnected (true, false)) {
+            if (!currentGraph.addEdge (candidat).isConnected ()) {
                 currentGraph.rollback (); return;
             }
             //System.out.println ("connected");
-            pSs = currentGraph.getLikelihood (BETA_A_V, BETA_A_E, false);
+            pSs = currentGraph.getLikelihood ();
             pS = Math.pow (TAU, BETA_A_E + BETA_A_V);
         }
         
-        double mod = currentGraph.getCloseEdges (true) .size ()
-                   / currentGraph.getCloseEdges (false).size ();
+        double mod = qS2Ss / currentGraph.getBorderEdges ();
         
         //System.out.println (currentGraph.getInnerEdges ().size ());
         //System.out.println (currentGraph.getOuterEdges ().size ());
@@ -99,7 +104,6 @@ public class MCMCTau implements MCMC {
         
         //System.out.println (rho);
         if (RANDOM.nextDouble () <= rho) {
-            currentGraph.isConnected (true, true);
             //System.out.println ("Applied");
             currentGraph.commit ();
         } else {

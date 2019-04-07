@@ -1,12 +1,10 @@
 package ru.shemplo.metagennet.graph;
 
-import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 import ru.shemplo.snowball.stuctures.Pair;
 
-@EqualsAndHashCode (callSuper = true)
 public class Edge extends Pair <Vertex, Vertex> {
 
     private static final long serialVersionUID = -33766014367150868L;
@@ -15,7 +13,9 @@ public class Edge extends Pair <Vertex, Vertex> {
     @NonNull private Double weight;
     
     public Edge (Vertex F, Vertex S, double weight) { 
-        super (F, S); this.weight = weight;
+        super (F.getId () <= S.getId () ? F : S, 
+               F.getId () <= S.getId () ? S : F); 
+        this.weight = weight;
     }
     
     @Override
@@ -25,5 +25,19 @@ public class Edge extends Pair <Vertex, Vertex> {
     
     @Override
     public Edge swap () { return new Edge (S, F, weight); }
+    
+    @Override
+    public boolean equals (Object obj) {
+        if (obj == null) { return false; }
+        return hashCode () == obj.hashCode ();
+    }
+    
+    /**
+     * Assumed that vertices don't have <b>id</b> more than 2<sup>15</sup>
+     */
+    @Override
+    public int hashCode () {
+        return (F.getId () << 15) | S.getId ();
+    }
     
 }

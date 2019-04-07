@@ -7,26 +7,26 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import ru.shemplo.metagennet.graph.GraphModules.GraphModule;
-import ru.shemplo.snowball.stuctures.Pair;
+import ru.shemplo.snowball.stuctures.Trio;
 
 @RequiredArgsConstructor (access = AccessLevel.PACKAGE)
 public class GraphDescriptor implements Cloneable {
+
+    private final Random R = new Random ();
+    private final double betaAV, betaAE;
     
-    @SuppressWarnings ("unused")
     private final boolean signal;
     private final Graph graph;
     
-    @Getter private final Set <Vertex> vertices;
-    @Getter private final Set <Edge> edges;
+    private final Deque <Trio <Integer, Edge, Double>> history 
+          = new LinkedList <> ();
     
-    private Vertex pmVA, pmVB; // previous modified Vertex (A | B)
-    private Edge pmEA;         // previous modified Edge
+    @Getter private final Map <GraphModule, Set <Vertex>> modules = new HashMap <> ();
+    @Getter private final Set <Vertex> vertices = new HashSet <> ();
+    @Getter private final Set <Edge> edges  = new HashSet <> (),
+                                     bedges = new HashSet <> ();
     
-    private Vertex lmVA, lmVB; // last modified Vertex (A | B)
-    private Edge lmEA;         // last modified Edge
-    
-    private final Set <Vertex> vertexToChange = new HashSet <> ();
-    private final Set <Edge> edgeToChange = new HashSet <> ();
+    private double likelihood = 1;
     
     @Override
     public String toString () {
@@ -61,7 +61,7 @@ public class GraphDescriptor implements Cloneable {
         sj.add ("    node [shape = circle];");
         sj.add ("    node [color = black];");
         
-        for (Edge edge : graph.getEdges ().values ()) {
+        for (Edge edge : graph.getEdgesList ()) {
             if (edge.F.getId () > edge.S.getId ()) { continue; }
             
             String appendix = "";
@@ -76,6 +76,223 @@ public class GraphDescriptor implements Cloneable {
         sj.add ("}");
         
         return sj.toString ();
+    }
+    
+    public GraphDescriptor commit () {
+        history.clear (); return this;
+    }
+    
+    public GraphDescriptor rollback () {
+        while (!history.isEmpty ()) {
+            Trio <Integer, Edge, Double> event = history.pollLast ();
+            if (event.F == 0) {
+                applyRemove (event.S);
+            } else if (event.F == 1) {
+                applyAdd (event.S);
+            }
+            
+            likelihood = event.T;
+        }
+        
+        return this;
+    }
+    
+    public GraphDescriptor addEdge (Edge edge) {
+        history.add (Trio.mt (0, edge, likelihood));
+        applyAdd (edge);
+        return this;
+    }
+    
+    private void applyAdd (Edge edge) {
+        edges.add (edge);
+        
+        if (!signal) {
+            final double w = edge.getWeight ();
+            likelihood = betaAE * Math.pow (w, betaAE);            
+        }
+        
+        applyVertexAdd (edge.F);
+        applyVertexAdd (edge.S);
+        bedges.removeAll (edges);
+    }
+    
+    private void applyVertexAdd (Vertex vertex) {
+        if (!vertices.contains (vertex)) {
+            vertices.add (vertex);
+            applyVertex (vertex, 0);
+            
+            if (!signal) {
+                final double w = vertex.getWeight ();
+                likelihood *= betaAV * Math.pow (w, betaAV);                
+            } else {
+                GraphModule module = graph.getModules ().getModule (vertex);
+                if (!modules.containsKey (module)) {
+                    modules.put (module, new HashSet <> ());
+                    
+                    final double w = vertex.getWeight ();                
+                    likelihood *= betaAV * Math.pow (w, betaAV);
+                }
+                
+                modules.get (module).add (vertex);
+            }
+        }
+    }
+    
+    public GraphDescriptor removeEdge (Edge edge) {
+        history.add (Trio.mt (1, edge, likelihood));
+        applyRemove (edge);
+        return this;
+    }
+    
+    private void applyRemove (Edge edge) {
+        edges.remove (edge);
+        
+        if (!signal) {
+            final double w = edge.S.getWeight ();            
+            likelihood = betaAV * Math.pow (w, betaAV);
+        }
+        
+        applyVertex (edge.F, 1);
+        applyVertex (edge.S, 1);
+        bedges.removeAll (edges);
+    }
+    
+    private void applyVertex (Vertex vertex, int action) {
+        int neis = 0;
+        for (Edge nei : vertex.getEdges ().values ()) {
+            Vertex vnei = nei.F.getId () == vertex.getId () 
+                        ? nei.S : nei.F;
+            if (vertices.contains (vnei)) {
+                if   (action == 0) { bedges.remove (nei); } 
+                else               { bedges.add (nei);    }
+                
+                neis += edges.contains (nei) ? 1 : 0;
+            } else {
+                if   (action == 0) { bedges.add (nei);    } 
+                else               { bedges.remove (nei); }
+            }
+        }
+        
+        //System.out.println (vertex + " " + neis);
+        if (action == 1 && neis == 0) { 
+            if (!signal) {
+                final double w = vertex.getWeight ();
+                likelihood *= betaAV * Math.pow (w, betaAV);
+            } else {
+                GraphModule module = graph.getModules ().getModule (vertex);
+                Set <Vertex> set = modules.get (module);
+                set.remove (vertex);
+                
+                if (set.isEmpty ()) {
+                    modules.remove (module);
+                    
+                    final double w = vertex.getWeight ();
+                    likelihood /= betaAV * Math.pow (w, betaAV);
+                }
+            }
+            
+            vertices.remove (vertex); 
+        }
+    }
+    
+    public boolean isConnected () {
+        if (vertices.size () == 0) { return true; }
+        
+        final Queue <Vertex> queue = new LinkedList <> ();
+        queue.add (vertices.iterator ().next ());
+        
+        Set <Integer> visited = new HashSet<> ();
+        visited.add (queue.peek ().getId ());
+        
+        int iters = 10000;
+        while (!queue.isEmpty () && --iters >= 0) {
+            Vertex vertex = queue.poll ();
+            for (Edge edge : vertex.getEdges ().values ()) {
+                if (!edges.contains (edge)) { continue; }
+                
+                Vertex vnei = edge.F.getId () == vertex.getId () 
+                            ? edge.S : edge.F;
+                if (!visited.contains (vnei.getId ())) {
+                    visited.add (vnei.getId ());
+                    queue.add (vnei);
+                }
+            }
+        }
+        //System.out.println ("Iters: " + iters);
+        
+        return vertices.size () == visited.size ();
+    } 
+    
+    public Edge getRandomInnerEdge () {
+        int index = R.nextInt (edges.size ());
+        for (Edge edge : edges) {
+            if (index-- == 0) { return edge; }
+        }
+        
+        return null;
+    }
+    
+    public int getInnerEdges () {
+        return edges.size ();
+    }
+    
+    public Edge getRandomBorderEdge () {
+        int index = R.nextInt (bedges.size ());
+        for (Edge edge : bedges) {
+            if (index-- == 0) { return edge; }
+        }
+        
+        return null;
+    }
+    
+    public int getBorderEdges () {
+        return bedges.size ();
+    }
+    
+    public Edge getRandomBorderOrInnerEdge () {
+        int index = R.nextInt (bedges.size () + edges.size ());
+        if (index < bedges.size ()) {
+            for (Edge edge : bedges) {
+                if (index-- == 0) { return edge; }
+            }
+        } else {
+            index -= bedges.size ();
+            for (Edge edge : edges) {
+                if (index-- == 0) { return edge; }
+            }
+        }
+        
+        return null;
+    }
+    
+    public double getLikelihood () {
+        return likelihood;
+    }
+    
+    /*
+    @SuppressWarnings ("unused")
+    private final boolean signal;
+    private final Graph graph;
+    
+    @Getter private final Set <Integer> 
+        vertices    = new HashSet <> ();
+    @Getter private final Set <Edge> 
+        edges       = new HashSet <> ();
+    private Set <Edge> borderEdges = new HashSet <> ();
+    
+    private Edge tmpEdgeAdd = null, tmpEdgeRemove = null;
+    
+    private boolean isAC (Edge edge) { // Add candidate
+        return edge.equals (tmpEdgeAdd);
+    }
+    
+    private boolean isRMC (Edge edge) { // Remove candidate
+        return edge.equals (tmpEdgeRemove);
+    }
+    
+    private boolean isActiveEdge (Edge edge) {
+        final boolean now = edges.contains (edge);
+        return (now && !isRMC (edge)) || (!now && isAC (edge));
     }
     
     private static final Edge STUB_EDGE = new Edge (null, null, 1.0);
@@ -105,222 +322,98 @@ public class GraphDescriptor implements Cloneable {
         Set <GraphModule> modulesV = new HashSet <> ();
         double result = 1.0d;
         
-        for (Vertex vertex : vertices) {
-            if (!stable && vertexToChange.contains (vertex)) { continue; }
-            
-            GraphModule module = modules.getModule (vertex);
-            if (module == null) {
-                result *= vertex.getWeight ();
-                continue;
-            }
-            
-            if (!modulesV.contains (module)) {
-                result *= vertex.getWeight ();
-                modulesV.add (module);
-            }
+        return result;
+    }
+    
+    public GraphDescriptor commit () {
+        rollback (); // to clear all
+        return this;
+    }
+    
+    public GraphDescriptor rollback () {
+        tmpEdgeRemove = null;
+        tmpEdgeAdd = null; 
+        return this;
+    }
+    
+    public GraphDescriptor addEdge (Edge edge) {
+        tmpEdgeAdd = edge; return this;
+    }
+    
+    public GraphDescriptor removeEdge (Edge edge) {
+        tmpEdgeRemove = edge; return this;
+    }
+    
+    public boolean isConnected (boolean ignoreIfOneSingle, boolean trimIfOneSingle) {
+        if (vertices.size () == 0 || (tmpEdgeAdd == null && tmpEdgeRemove == null)) { 
+            return true; 
         }
         
-        for (Edge edge : edges) {
-            if (!stable && edgeToChange.contains (edge)) { continue; }
-            result *= edge.getWeight ();
-        }
-        
-        if (!stable) {
-            for (Vertex vertex : vertexToChange) {
-                if (vertices.contains (vertex)) { continue; }
-                
-                GraphModule module = modules.getModule (vertex);
-                if (module == null) {
-                    result *= vertex.getWeight ();
-                    continue;
-                }
-                
-                if (!modulesV.contains (module)) {
-                    result *= vertex.getWeight ();
-                    modulesV.add (module);
+        if (tmpEdgeAdd != null && tmpEdgeRemove == null) {
+            return vertices.contains (tmpEdgeAdd.F.getId ())
+                || vertices.contains (tmpEdgeAdd.S.getId ());
+        } else if (tmpEdgeRemove != null) {
+            final Queue <Vertex> queue = new LinkedList <> ();
+            queue.add (tmpEdgeRemove.F);
+            
+            Set <Integer> visited = new HashSet<> ();
+            visited.add (queue.peek ().getId ());
+            
+            int iters = 10000;
+            while (!queue.isEmpty () && --iters >= 0) {
+                Vertex vertex = queue.poll ();
+                for (Edge edge : vertex.getEdges ().values ()) {
+                    if (!isActiveEdge (edge)) { continue; }
+                    
+                    if (!visited.contains (edge.S.getId ())) {
+                        visited.add (edge.S.getId ());
+                        queue.add (edge.S);
+                    }
                 }
             }
             
-            for (Edge edge : edgeToChange) {
-                if (edges.contains (edge)) { continue; }
-                result *= edge.getWeight ();
+            int dist  = Math.abs (vertices.size () - visited.size ());
+            int limit = ignoreIfOneSingle ? 1 : 0;
+            if (dist > limit) { return false; }
+            
+            if (dist == 1 && trimIfOneSingle) {
+                for (Integer vertexID : vertices) {
+                    if (!visited.contains (vertexID)) {
+                        tmpTrimVertex1 = vertexID;
+                        break;
+                    }
+                }
+                
+                return ignoreIfOneSingle;
             }
+            
+            return true;
+        }
+        
+        return false;
+    }
+    
+    public Set <Integer> getVertices (boolean stable) {
+        if (stable) { return vertices; }
+        
+        Set <Integer> result = new HashSet <> (vertices);
+        if (!stable && tmpTrimVertex1 != null) {
+            result.remove (tmpTrimVertex1);
+        }
+        if (!stable && tmpTrimVertex2 != null) {
+            result.remove (tmpTrimVertex2);
         }
         
         return result;
     }
     
-    public GraphDescriptor commit () {
-        vertexToChange.forEach (vertex -> {
-            if (vertices.contains (vertex)) {
-                vertices.remove (vertex);
-            } else {
-                vertices.add (vertex);
-            }
-        });
-        
-        edgeToChange.forEach (edge -> {
-            if (edges.contains (edge)) {
-                edges.remove (edge);
-            } else {
-                edges.add (edge);
-            }
-        });
-        
-        vertexToChange.clear ();
-        edgeToChange.clear ();
-        
-        pmVA = lmVA; pmVB = lmVB;
-        pmEA = lmEA;
-        
-        return this;
-    }
-    
-    public GraphDescriptor rollback () {
-        vertexToChange.clear ();
-        edgeToChange.clear ();
-        
-        return this;
-    }
-    
-    public GraphDescriptor addVertex (Vertex vertex) {
-        return addVertex (vertex.getId ());
-    }
-    
-    public GraphDescriptor addVertex (int id) {
-        final Vertex va = graph.getVertices ().get (id);
-        if (!vertexToChange.contains (va) && !vertices.contains (va)) { 
-            vertexToChange.add (va); lmVA = va;
+    public List <Vertex> getVerticesOrdered (boolean stable) {
+        final List <Vertex> verts = new ArrayList <> ();
+        for (Integer vertexID : getVertices (stable)) {
+            verts.add (graph.getVertices ().get (vertexID));
         }
         
-        return this;
-    }
-    
-    public GraphDescriptor addEdge (Edge edge) {
-        return addEdge (edge.F, edge.S);
-    }
-    
-    public GraphDescriptor addEdge (Vertex a, Vertex b) {
-        return addEdge (a.getId (), b.getId ());
-    }
-    
-    public GraphDescriptor addEdge (int a, int b) {
-        addVertex (a); lmVB = lmVA;
-        lmVA = null; addVertex (b);
-        
-        final Vertex va = graph.getVertices ().get (a),
-                     vb = graph.getVertices ().get (b);
-        final Pair <Vertex, Vertex> pair = Pair.mp (va, vb);
-        
-        doAddEdge (pair); // If not oriented then two edges should be added
-        if (!graph.isOriented ()) { doAddEdge (pair.swap ()); }
-        return this;
-    }
-    
-    private void doAddEdge (Pair <Vertex, Vertex> pair) {
-        edgeToChange.add (lmEA = graph.getEdges ().get (pair));
-    }
-    
-    public GraphDescriptor removeEdge (Edge edge) {
-        return removeEdge (edge.F, edge.S);
-    }
-    
-    public GraphDescriptor removeEdge (Vertex a, Vertex b) {
-        return removeEdge (a.getId (), b.getId ());
-    }
-    
-    public GraphDescriptor removeEdge (int a, int b) {
-        final Vertex va = graph.getVertices ().get (a),
-                     vb = graph.getVertices ().get (b);
-        final Pair <Vertex, Vertex> pair = Pair.mp (va, vb);
-   
-        doRemoveEdge (pair); // If not oriented then two edges should be removed
-        if (!graph.isOriented ()) { doRemoveEdge (pair.swap ()); }
-        return this;
-    }
-    
-    private void doRemoveEdge (Pair <Vertex, Vertex> pair) {
-        edgeToChange.add (lmEA = graph.getEdges ().get (pair));
-    }
-    
-    public boolean isConnected (boolean ignoreIfOneSingle, boolean trimIfOneSingle) {
-        if (vertices.size () == 0) { return true; }
-        
-        Queue <Vertex> queue = new LinkedList <> ();
-        queue.add (vertices.iterator ().next ());
-        
-        Set <Vertex> visited = new HashSet<> ();
-        visited.add (queue.peek ());
-        
-        int iters = 100;
-        while (!queue.isEmpty () && --iters >= 0) {
-            Vertex vertex = queue.poll ();
-            for (Edge edge : vertex.getEdges ().values ()) {
-                boolean cont1 = edges.contains (edge), 
-                        cont2 = edgeToChange.contains (edge);
-                if ((!cont1 && !cont2) || (cont1 && cont2)) { 
-                    continue; // this edge exactly not in graph
-                }
-                
-                if (!visited.contains (edge.S)) {
-                    visited.add (edge.S);
-                    queue.add (edge.S);
-                }
-            }
-        }
-        
-        Vertex notCovered = null;
-        for (Vertex vertex : vertices) {
-            if (visited.contains (vertex)) { continue; }
-            
-            if (vertexToChange.contains (vertex)) {
-                continue; // This vertex will be removed
-            }
-            
-            if (notCovered == null) {
-                notCovered = vertex;
-            } else { 
-                // More than 1 not covered vertex
-                return false;
-            }
-        }
-        
-        for (Vertex vertex : vertexToChange) {
-            if (visited.contains (vertex)) { continue; }
-            
-            if (vertices.contains (vertex)) {
-                continue; // This vertex will be removed
-            }
-            
-            if (notCovered == null) {
-                notCovered = vertex;
-            } else { 
-                // More than 1 not covered vertex
-                return false;
-            }
-        }
-        
-        if (trimIfOneSingle && notCovered != null) {
-            vertices.remove (notCovered);
-        }
-        
-        // If it's really connected or it become connected after trimming
-        return notCovered == null || ignoreIfOneSingle;
-    }
-    
-    public List <Vertex> getVertices (boolean stable) {
-        if (stable) { return new ArrayList <> (vertices); }
-        
-        Set <Vertex> result = new HashSet <> (vertices);
-        vertexToChange.forEach (vertex -> {
-            if (result.contains (vertex)) {
-                result.remove (vertex);
-            } else {
-                result.add (vertex);
-            }
-        });
-        
-        return new ArrayList <> (result);
+        return verts;
     }
     
     public List <Edge> getInnerEdges (boolean stable) {
@@ -328,56 +421,80 @@ public class GraphDescriptor implements Cloneable {
         if (stable) { return new ArrayList <> (edges); }
         
         Set <Edge> result = new HashSet <> (edges);
-        edgeToChange.forEach (edge -> {
-            if (result.contains (edge)) {
-                result.remove (edge);
-            } else {
-                result.add (edge);
-            }
-        });
+        result.remove (tmpEdgeRemove);
+        result.add (tmpEdgeAdd); 
         
         return new ArrayList <> (result);
     }
     
-    public Set <Edge> getCloseEdges (boolean stable) {
-        Set <Edge> edges = new HashSet <> ();
-        for (Vertex vertex : getVertices (stable)) {
-            edges.addAll (vertex.getEdges ().values ());
+    public Set <Edge> getBorderEdges (boolean stable) {
+        if (stable) { return borderEdges; }
+        
+        Set <Edge> edges = new HashSet <> (borderEdges);
+        if (!stable && tmpTrimVertex1 != null) {
+            Vertex v = graph.getVertices ().get (tmpAddVertex1);
+            edges.removeAll (v.getEdges ().values ());
+            edges.add (tmpEdgeRemove);
+        }
+        if (!stable && tmpTrimVertex2 != null) {
+            Vertex v = graph.getVertices ().get (tmpAddVertex2);
+            edges.removeAll (v.getEdges ().values ());
+            edges.add (tmpEdgeRemove);
         }
         
+        if (tmpAddVertex1 != null) {
+            Vertex v = graph.getVertices ().get (tmpAddVertex1);
+            edges.addAll (v.getEdges ().values ());
+            edges.remove (tmpEdgeAdd);
+        }
+        if (tmpAddVertex2 != null) {
+            Vertex v = graph.getVertices ().get (tmpAddVertex2);
+            edges.addAll (v.getEdges ().values ());
+            edges.remove (tmpEdgeAdd);
+        }
+        
+        edges.removeAll (edges);
         return edges;
     }
     
-    public List <Edge> getOuterEdges (boolean stable) {
-        Set <Edge> edges = getCloseEdges (stable);
-        edges.removeAll (getInnerEdges (stable));
-        return new ArrayList <> (edges);
+    public Edge selectRandomEdgeFromGraph () {
+        int index = R.nextInt (graph.getEdgesList ().size ());
+        return graph.getEdgesList ().get (index);
     }
     
-    public Edge selectRandomEdgeFromGraph () {
-        int index = R.nextInt (graph.getEdges ().size ());
-        for (Edge edge : graph.getEdges ().values ()) {
+    public Edge selectRandomEdgeFromSunRays () {
+        int index = R.nextInt (borderEdges.size ());
+        for (Edge edge : borderEdges) {
             if (index-- == 0) { return edge; }
         }
         
         return null; // impossible
     }
     
-    public Edge selectRandomEdgeFromSunRays () {
-        final List <Edge> edges = getOuterEdges (true);
-        return edges.get (R.nextInt (edges.size ()));
-    }
-    
-    public Edge selectRandomEdgeFromHedgehog () {
-        List <Edge> edges = getInnerEdges (true);
-        edges.addAll (getOuterEdges (true));
+    public Edge selectRandomEdgeFromBorderAndInside () {
+        int index = R.nextInt (borderEdges.size () + edges.size ());
+        if (index < borderEdges.size ()) {
+            for (Edge edge : borderEdges) {
+                if (index-- == 0) { return edge; }
+            }
+        } else {
+            index -= borderEdges.size ();
+            for (Edge edge : edges) {
+                if (index-- == 0) { return edge; }
+            }
+        }
         
-        return edges.get (R.nextInt (edges.size ()));
+        return null; // impossible
     }
     
-    public Edge selectRandomEdgeFromPotato () {
-        final List <Edge> edges = getInnerEdges (true);
-        return edges.get (R.nextInt (edges.size ()));
+    public Edge selectRandomEdgeFromInside () {
+        int index = R.nextInt (edges.size ());
+        for (Edge edge : edges) {
+            if (index-- == 0) { return edge; }
+        }
+        
+        return null; // impossible
     }
+    */
     
 }
