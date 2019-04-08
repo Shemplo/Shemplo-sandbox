@@ -34,7 +34,8 @@ public class MelanomaGraphReader implements GraphReader {
         Map <String, Integer> gene2index = new HashMap <> ();
         for (int i = 0; i < genesVerts.size (); i++) {
             String name = genesVerts.get (i);
-            graph.addVertex (i, genesDesc.get (name));
+            graph.addVertex (i, genesDesc.get (name))
+                 .setName (name);
             gene2index.put (name, i);
         }
         
@@ -43,6 +44,13 @@ public class MelanomaGraphReader implements GraphReader {
         }
         
         graph.setModules (GraphModules.splitGraph (graph));
+        /*
+        GraphModules modules = graph.getModules ();
+        modules.getModules ().forEach ((vert, module) -> {
+            System.out.println ("Module");
+            module.getVertices ().forEach (System.out::println);
+        });
+        */
         return graph;
     }
     

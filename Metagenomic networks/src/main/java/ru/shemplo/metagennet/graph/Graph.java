@@ -3,7 +3,6 @@ package ru.shemplo.metagennet.graph;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -48,21 +47,18 @@ public class Graph {
         return descriptor;
     }
     
-    public void addVertex (int id, Double weight) {
-        addVertex (new Vertex (id, weight));
+    public Vertex addVertex (int id, Double weight) {
+        return addVertex (new Vertex (id, weight));
     }
     
-    public void addVertex (Vertex vertex) {
+    public Vertex addVertex (Vertex vertex) {
         int id = vertex.getId ();
         while (id >= vertices.size ()) {
             vertices.add (null);
         }
         
-        if (vertices.get (id) != null && !Objects.equals (vertex, vertices.get (id))) {
-            throw new IllegalArgumentException ("Vertex " + id + " already exists");
-        }
-        
         vertices.set (id, vertex);
+        return vertex;
     }
     
     public void addEdge (int a, int b, Double weight) {
@@ -74,10 +70,12 @@ public class Graph {
     }
     
     public void addEdge (Edge edge) {
+        addVertex (edge.F);
         if (vertices.get (edge.F.getId ()) == null) {
             addVertex (edge.F);
         }
         
+        addVertex (edge.S);
         if (vertices.get (edge.S.getId ()) == null) {
             addVertex (edge.S);
         }

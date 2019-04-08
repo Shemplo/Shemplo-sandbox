@@ -13,6 +13,17 @@ public class Vertex {
     
     @Getter private final int id;
     
+    @Setter 
+    private String name;
+    
+    public String getName () {
+        if (name != null) {
+            return name;
+        }
+        
+        return "V" + id;
+    }
+    
     @Getter @Setter
     @NonNull private Double weight;
     

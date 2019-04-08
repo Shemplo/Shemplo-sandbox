@@ -43,6 +43,7 @@ public class MCMCFixed implements MCMC {
             int limit = (int) (iterations * 0.9);
             if (iteration >= limit && iteration % 50 == 0) {
                 snapshots.add (new HashSet <> (currentGraph.getVertices ()));
+                //System.out.println (currentGraph.toVerticesString ());
                 //System.out.println (currentGraph);
             }
             //System.out.println (currentGraph.getEdges ());
@@ -75,24 +76,17 @@ public class MCMCFixed implements MCMC {
         double qS2Ss = 0, qSs2S = 0;
         qS2Ss = currentGraph.getBorderEdges ();
         
-        Edge candidatOut  = currentGraph.getRandomBorderEdge ();
-        currentGraph.addEdge (candidatOut);
+        final Edge candidatBorder = currentGraph.getRandomBorderEdge ();
+        final Edge candidatIn     = currentGraph.getRandomInnerEdge ();
+        currentGraph.addEdge (candidatBorder).removeEdge (candidatIn);
+        //System.out.println ("rm " + candidatIn + " / add " + candidatBorder);
+        //System.out.println ("X>> " + currentGraph);
         if (!currentGraph.isConnected ()) {
             //System.out.println ("Not connected");
-            //System.out.println ("X>> " + currentGraph);
             currentGraph.rollback (); 
             //iteration += 1;
-            return;
-        }
-        
-        Edge candidatIn = currentGraph.getRandomInnerEdge ();
-        currentGraph.removeEdge (candidatIn);
-        //System.out.println (candidatIn + " / " + candidatOut);
-        if (!currentGraph.isConnected ()) {
-            //System.out.println ("Not connected");
-            //System.out.println ("X>> " + currentGraph);
-            currentGraph.rollback (); 
-            //iteration += 1;
+            
+            //System.out.println (">>> " + currentGraph);
             return;
         }
         qSs2S = currentGraph.getBorderEdges ();
@@ -103,17 +97,20 @@ public class MCMCFixed implements MCMC {
         double pSs = currentGraph.getLikelihood ();
         //System.out.println (pS + " " + pSs + " " + (pSs / pS));
         if (idling) { pSs = 1.0; pS = 1.0; } // do not consider likelihood
-        double rho = Math.min (1.0, (pSs / pS) * (qSs2S / qS2Ss));
+        double rho = Math.min (1.0, (pS / pSs) * (qS2Ss / qSs2S));
         //System.out.println ("Rho: " + rho);
         
         //System.out.println (rho);
         if (RANDOM.nextDouble () <= rho) {
+            //System.out.println ("Rho: " + rho + ", ps: " + pS + " / " + pSs);
+            //System.out.println ("#! " + currentGraph.toVerticesString ());
             //System.out.println ("Applied");
             currentGraph.commit ();
         } else {
             currentGraph.rollback ();
         }
         
+        //System.out.println (currentGraph.toVerticesString ());
         //System.out.println (">>> " + currentGraph);
         iteration += 1;
     }
