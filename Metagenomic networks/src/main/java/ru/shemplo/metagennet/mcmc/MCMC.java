@@ -20,4 +20,6 @@ public interface MCMC {
     
     public int getStarts ();
     
+    public int getCommits ();
+    
 }

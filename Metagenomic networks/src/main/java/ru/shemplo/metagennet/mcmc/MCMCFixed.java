@@ -2,67 +2,27 @@ package ru.shemplo.metagennet.mcmc;
 
 import static ru.shemplo.metagennet.RunMetaGenMCMC.*;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import ru.shemplo.metagennet.graph.Edge;
 import ru.shemplo.metagennet.graph.GraphDescriptor;
-import ru.shemplo.metagennet.graph.Vertex;
 
-@RequiredArgsConstructor
-public class MCMCFixed implements MCMC {
+public class MCMCFixed extends AbsMCMC {
     
-    public static final double BETA_A_V = 0.2, BETA_B_V = 1;
-    public static final double BETA_A_E = 0.1, BETA_B_E = 1;
-    
-    @Getter protected GraphDescriptor currentGraph;
-    protected final GraphDescriptor initialGraph;
-    protected List <Edge> initialGraphEdges;
-    
-    protected final int iterations;
-    protected int iteration = 0;
-    
-    @Getter
-    protected final List <Set <Vertex>> snapshots = new ArrayList <> ();
-    
-    @Override
-    public boolean finishedWork () {
-        return iteration >= iterations;
+    public MCMCFixed (GraphDescriptor initialGraph, int iterations) {
+        super (initialGraph, iterations);
     }
-    
-    @Override
-    public void doAllIterations (boolean idling) {
-        //System.out.println ("Start");
-        while (!finishedWork ()) {
-            makeIteration (idling);
-            
-            int limit = (int) (iterations * 0.9);
-            if (iteration >= limit && iteration % 50 == 0) {
-                snapshots.add (new HashSet <> (currentGraph.getVertices ()));
-                //System.out.println (currentGraph.toVerticesString ());
-                //System.out.println (currentGraph);
-            }
-            //System.out.println (currentGraph.getEdges ());
-        }
-    }
-    
-    @Getter private int starts = 0;
-    
+
     @Override
     public void makeIteration (boolean idling) {
         if (finishedWork ()) { return; }
         
-        starts += 1;
-        
         if (iteration == 0) {
             currentGraph = initialGraph;
-            iteration += 1; return;
+            iteration += 1; 
+            commits += 1;
+            return;
         }
         
+        @SuppressWarnings ("unused")
         double pS = currentGraph.getLikelihood ();
         //System.out.println (pS);
         
@@ -74,7 +34,7 @@ public class MCMCFixed implements MCMC {
         //System.out.println (candidatIn + " / " + candidatOut);
         
         double qS2Ss = 0, qSs2S = 0;
-        qS2Ss = currentGraph.getBorderEdges ();
+        qS2Ss = 1.0 / Math.max (currentGraph.getBorderEdges (), 1);
         
         final Edge candidatBorder = currentGraph.getRandomBorderEdge ();
         final Edge candidatIn     = currentGraph.getRandomInnerEdge ();
@@ -89,15 +49,16 @@ public class MCMCFixed implements MCMC {
             //System.out.println (">>> " + currentGraph);
             return;
         }
-        qSs2S = currentGraph.getBorderEdges ();
+        qSs2S = 1.0 / Math.max (currentGraph.getBorderEdges (), 1);
         
         //System.out.println (currentGraph.getInnerEdges ().size ());
         //System.out.println (currentGraph.getOuterEdges ().size ());
         
         double pSs = currentGraph.getLikelihood ();
+        double mod = qS2Ss / qSs2S;
         //System.out.println (pS + " " + pSs + " " + (pSs / pS));
         if (idling) { pSs = 1.0; pS = 1.0; } // do not consider likelihood
-        double rho = Math.min (1.0, (pS / pSs) * (qS2Ss / qSs2S));
+        double rho = Math.min (1.0, pSs * mod);
         //System.out.println ("Rho: " + rho);
         
         //System.out.println (rho);
@@ -106,6 +67,7 @@ public class MCMCFixed implements MCMC {
             //System.out.println ("#! " + currentGraph.toVerticesString ());
             //System.out.println ("Applied");
             currentGraph.commit ();
+            commits += 1;
         } else {
             currentGraph.rollback ();
         }

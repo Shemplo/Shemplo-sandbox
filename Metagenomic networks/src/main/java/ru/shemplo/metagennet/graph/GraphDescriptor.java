@@ -7,6 +7,7 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import ru.shemplo.metagennet.graph.GraphModules.GraphModule;
+import ru.shemplo.snowball.stuctures.Pair;
 import ru.shemplo.snowball.stuctures.Trio;
 
 @RequiredArgsConstructor (access = AccessLevel.PACKAGE)
@@ -39,10 +40,12 @@ public class GraphDescriptor implements Cloneable {
                           . collect (Collectors.toList ());
         sj.add (String.format (" Edges  (%4d): %s", eds.size (), eds.toString ()));
         
+        if (bedges.size () <= 100) {
+            eds = bedges.stream ().map (Edge::toString)
+                . collect (Collectors.toList ());
+            sj.add (String.format (" BEdges (%4d): %s", eds.size (), eds.toString ()));
+        }
         /*
-        eds = bedges.stream ().map (Edge::toString)
-            . collect (Collectors.toList ());
-        sj.add (String.format (" BEdges (%4d): %s", eds.size (), eds.toString ()));
         sj.add ("");
         */
         
@@ -93,7 +96,12 @@ public class GraphDescriptor implements Cloneable {
     
     public GraphDescriptor commit () {
         //System.out.println ("Commit");
-        history.clear (); return this;
+        while (!history.isEmpty ()) {
+            history.pollLast ();
+        }
+        
+        this.likelihood = 1.0d;
+        return this;
     }
     
     public GraphDescriptor rollback () {
@@ -103,15 +111,16 @@ public class GraphDescriptor implements Cloneable {
             //System.out.println (event);
             if (event.F == 0) {
                 applyRemove (event.S);
-                bedges.add (event.S);
+                //bedges.add (event.S);
             } else if (event.F == 1) {
                 applyAdd (event.S);
-                bedges.remove (event.S);
+                //bedges.remove (event.S);
             }
             
             likelihood = event.T;
         }
         
+        if (!signal) { likelihood = 1; }
         return this;
     }
     
@@ -126,22 +135,24 @@ public class GraphDescriptor implements Cloneable {
         
         if (!signal) {
             final double w = edge.getWeight ();
-            likelihood = betaAE * Math.pow (w, betaAE);            
+            //likelihood *= /*betaAE */ Math.pow (w, betaAE);
+            likelihood /= w;
         }
         
-        applyVertexAdd (edge.F);
-        applyVertexAdd (edge.S);
+        applyVertexAdd (edge.F, edge);
+        applyVertexAdd (edge.S, edge);
         bedges.removeAll (edges);
     }
     
-    private void applyVertexAdd (Vertex vertex) {
+    private void applyVertexAdd (Vertex vertex, Edge edge) {
         if (!vertices.contains (vertex)) {
             vertices.add (vertex);
-            applyVertex (vertex, 0);
+            applyVertex (vertex, edge, 0);
             
             if (!signal) {
                 final double w = vertex.getWeight ();
-                likelihood *= betaAV * Math.pow (w, betaAV);                
+                //likelihood *= /*betaAV */ Math.pow (w, betaAV);
+                likelihood /= w;
             } else {
                 GraphModule module = graph.getModules ().getModule (vertex);
                 if (!modules.containsKey (module)) {
@@ -164,36 +175,46 @@ public class GraphDescriptor implements Cloneable {
     
     private void applyRemove (Edge edge) {
         edges.remove (edge);
+        bedges.add (edge);
         
         if (!signal) {
             final double w = edge.S.getWeight ();            
-            likelihood = betaAE * Math.pow (w, betaAE);
+            //likelihood /= betaAE * Math.pow (w, betaAE);
+            //likelihood *= /*betaAE */ Math.pow (w, betaAE);
+            likelihood *= w;
         }
         
-        applyVertex (edge.F, 1);
-        applyVertex (edge.S, 1);
+        applyVertex (edge.F, edge, 1);
+        applyVertex (edge.S, edge, 1);
         bedges.removeAll (edges);
     }
     
-    private void applyVertex (Vertex vertex, int action) {
+    private void applyVertex (Vertex vertex, Edge edge, int action) {
         int neis = 0;
         if (action == 0) {
             // Extra edge (that is adding) will be removed later
             bedges.addAll (vertex.getEdges ().values ());
-        } else {
-            for (Vertex nei : vertex.getEdges ().keySet ()) {
-                Edge edge = vertex.getEdges ().get (nei);
-                if (edges.contains (edge)) {
-                    neis += 1;
-                }
+            bedges.remove (edge);
+        } else if (action == 1) {
+            for (Pair <Vertex, Edge> nei : vertex.getEdgesList ()) {
+                if (edges.contains (nei.S)) { neis += 1; }
             }
         }
         
         //System.out.println (vertex + " / " + neis + " / " + action);
         if (action == 1 && neis == 0) { 
+            for (Pair <Vertex, Edge> nei : vertex.getEdgesList ()) {
+                if (!vertices.contains (nei.F)) {
+                    bedges.remove (nei.S);
+                }
+            }
+            vertices.remove (vertex); 
+            
             if (!signal) {
                 final double w = vertex.getWeight ();
-                likelihood *= betaAV * Math.pow (w, betaAV);
+                //likelihood /= betaAV * Math.pow (w, betaAV);
+                //likelihood *= /*betaAV */ Math.pow (w, betaAV);
+                likelihood *= w;
             } else {
                 GraphModule module = graph.getModules ().getModule (vertex);
                 Set <Vertex> set = modules.get (module);
@@ -205,16 +226,6 @@ public class GraphDescriptor implements Cloneable {
                     likelihood /= betaAV * Math.pow (w, betaAV);
                 }
             }
-            
-            for (Vertex nei : vertex.getEdges ().keySet ()) {
-                Edge edge = vertex.getEdges ().get (nei);
-                if (edges.contains (edge)) {
-                    bedges.add (edge);
-                } else if (!vertices.contains (nei)) {
-                    bedges.remove (edge);
-                }
-            }
-            vertices.remove (vertex); 
         }
     }
     
@@ -230,14 +241,11 @@ public class GraphDescriptor implements Cloneable {
         int iters = 10000;
         while (!queue.isEmpty () && --iters >= 0) {
             Vertex vertex = queue.poll ();
-            for (Edge edge : vertex.getEdges ().values ()) {
-                if (!edges.contains (edge)) { continue; }
-                
-                Vertex vnei = edge.F.getId () == vertex.getId () 
-                            ? edge.S : edge.F;
-                if (!visited.contains (vnei.getId ())) {
-                    visited.add (vnei.getId ());
-                    queue.add (vnei);
+            for (Pair <Vertex, Edge> nei : vertex.getEdgesList ()) {
+                if (!edges.contains (nei.S)) { continue; }
+                if (!visited.contains (nei.F.getId ())) {
+                    visited.add (nei.F.getId ());
+                    queue.add (nei.F);
                 }
             }
         }
@@ -259,13 +267,28 @@ public class GraphDescriptor implements Cloneable {
         return edges.size ();
     }
     
-    public Edge getRandomBorderEdge () {
+    public Edge getRandomBorderEdge () {        
         int index = R.nextInt (bedges.size ());
         for (Edge edge : bedges) {
             if (index-- == 0) { return edge; }
         }
         
         return null;
+    }
+    
+    public int getBorderVertices () {
+        Set <Vertex> set = new HashSet <> ();
+        for (Edge edge : bedges) {
+            if (!vertices.contains (edge.F)) {
+                set.add (edge.F);
+            }
+            
+            if (!vertices.contains (edge.S)) {
+                set.add (edge.S);
+            }
+        }
+        
+        return set.size ();
     }
     
     public int getBorderEdges () {

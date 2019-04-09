@@ -21,29 +21,42 @@ import ru.shemplo.snowball.utils.StringManip;
 public class CSVGraphReader implements GraphReader {
     
     @Override
-    public Graph readGraph () throws IOException {
-        Pair <List <String>, List <List <String>>> verticesCSV = readCSV ("runtime/vertices.csv");
-        Pair <List <String>, List <List <String>>> edgesCSV = readCSV ("runtime/edges.csv");
+    public Graph readGraph (String filename) throws IOException {
+        Pair <List <String>, List <List <String>>> verticesCSV = readCSV ("runtime/" + filename + "vertices.csv");
+        Pair <List <String>, List <List <String>>> edgesCSV = readCSV ("runtime/" + filename + "edges.csv");
         
+        int nameColumnV = verticesCSV.F.indexOf ("\"geneSymbol\"") != -1
+                        ? verticesCSV.F.indexOf ("\"geneSymbol\"")
+                        : verticesCSV.F.indexOf ("\"name\"");
+        int pvalColumnV = verticesCSV.F.indexOf ("\"pval\"");
         AtomicInteger counter = new AtomicInteger ();
         final Map <String, Vertex> vertices 
-            = verticesCSV.S.stream ().map (lst -> Pair.mp (lst.get (1), lst))
+            = verticesCSV.S.stream ().map (lst -> Pair.mp (lst.get (nameColumnV), lst))
             . map     (p -> p.applyS (lst -> {
                 final int index = counter.getAndIncrement ();
                 Double weight = null;
-                try   { weight = Double.parseDouble (lst.get (6).replace (',', '.')); } 
+                try   { weight = Double.parseDouble (lst.get (pvalColumnV).replace (',', '.')); } 
                 catch (NumberFormatException nfe) { weight = 1D; }
                 
-                return new Vertex (index, weight);
+                Vertex vertex = new Vertex (index, weight);
+                vertex.setName (p.F.replace ("\"", ""));
+                return vertex;
             }))
             . collect (Collectors.toMap (Pair::getF, Pair::getS));
         
-        Graph graph = new Graph ();
+        int fromColumnE = edgesCSV.F.indexOf ("\"from\""),
+            toColumnR   = edgesCSV.F.indexOf ("\"to\"");
+        int pvalColumnE = edgesCSV.F.indexOf ("\"weight\"") != -1 
+                        ? edgesCSV.F.indexOf ("\"weight\"")
+                        : edgesCSV.F.indexOf ("\"pval\"");
+        //Graph graph = new Graph (0.133, 0.195);
+        Graph graph = new Graph (0.18, 1.0);
         edgesCSV.S.forEach (edge -> {
-            String from = edge.get (1), to = edge.get (2);
+            String from = edge.get (fromColumnE).replaceAll ("\\(\\d+\\)", ""), 
+                   to   = edge.get (toColumnR).replaceAll ("\\(\\d+\\)", "");
             Double weight = null;
             
-            try   { weight = Double.parseDouble (edge.get (4).replace (',', '.')); } 
+            try   { weight = Double.parseDouble (edge.get (pvalColumnE).replace (',', '.')); } 
             catch (NumberFormatException nfe) { weight = 1D; }
             
             Edge edgeI = new Edge (vertices.get (from), vertices.get (to), weight);

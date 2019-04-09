@@ -1,14 +1,18 @@
 package ru.shemplo.metagennet.graph;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import lombok.*;
+import ru.shemplo.snowball.stuctures.Pair;
 
 @RequiredArgsConstructor
-@ToString (exclude = "edges")
+@ToString (exclude = {"edges", "edgesList"})
 public class Vertex {
     
+    @Getter private final List <Pair <Vertex, Edge>> edgesList = new ArrayList <> ();
     @Getter private final Map <Vertex, Edge> edges = new HashMap <> ();
     
     @Getter private final int id;
@@ -27,6 +31,12 @@ public class Vertex {
     @Getter @Setter
     @NonNull private Double weight;
     
+    public void addEdge (Edge edge) {
+        Vertex vertex = edge.F.equals (this) ? edge.S : edge.F;
+        edgesList.add (Pair.mp (vertex, edge));
+        edges.put (vertex, edge);
+    }
+    
     @Override
     public boolean equals (Object obj) {
         if (obj == null) { return false; }
@@ -34,8 +44,6 @@ public class Vertex {
     }
     
     @Override
-    public int hashCode () {
-        return id;
-    }
+    public int hashCode () { return id; }
     
 }

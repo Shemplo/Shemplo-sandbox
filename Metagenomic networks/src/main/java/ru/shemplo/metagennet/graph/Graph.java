@@ -13,15 +13,14 @@ import ru.shemplo.metagennet.mcmc.MCMCDefault;
 @RequiredArgsConstructor
 public class Graph {
     
-    public static final double BETA_A_V = 0.2, BETA_B_V = 1;
-    public static final double BETA_A_E = 0.1, BETA_B_E = 1;
+    private final double alphaV, alphaE;
     
     @Getter private List <Edge> edgesList = new ArrayList <> ();
     @Getter private List <Vertex> vertices = new ArrayList <> ();
     @Getter @Setter private GraphModules modules = new GraphModules ();
     
     public GraphDescriptor getEmptyDescriptor (boolean useSignal) {
-        GraphDescriptor descriptor = new GraphDescriptor (BETA_A_V, BETA_A_E, useSignal, this);
+        GraphDescriptor descriptor = new GraphDescriptor (alphaV, alphaE, useSignal, this);
         Collections.shuffle (edgesList);
         return descriptor.addEdge (edgesList.get (0))
              . commit ();
@@ -40,7 +39,7 @@ public class Graph {
     }
     
     public GraphDescriptor getFullDescriptor (boolean useSignal) {
-        GraphDescriptor descriptor = new GraphDescriptor (BETA_A_V, BETA_A_E, useSignal, this);
+        GraphDescriptor descriptor = new GraphDescriptor (alphaV, alphaE, useSignal, this);
         descriptor.getVertices ().addAll (vertices); 
         descriptor.getEdges ().addAll (edgesList);
         
@@ -80,8 +79,8 @@ public class Graph {
             addVertex (edge.S);
         }
         
-        edge.F.getEdges ().put (edge.S, edge);
-        edge.S.getEdges ().put (edge.F, edge);
+        edge.F.addEdge (edge);
+        edge.S.addEdge (edge);
         edgesList.add (edge);
     }
     

@@ -15,7 +15,7 @@ import ru.shemplo.snowball.utils.StringManip;
 public class AdjMatrixGraphReader implements GraphReader {
     
     @Override
-    public Graph readGraph () throws IOException {
+    public Graph readGraph (String __) throws IOException {
         final Path path = Paths.get ("runtime/graph.csv");
         List <List <Double>> matrix = new ArrayList <> ();
         try (
@@ -32,7 +32,7 @@ public class AdjMatrixGraphReader implements GraphReader {
             }
         }
         
-        Graph graph = new Graph ();
+        Graph graph = new Graph (0.133, 0.195);
         for (int i = 0; i < matrix.size (); i++) {
             graph.addVertex (i, matrix.get (i).get (i));
         }

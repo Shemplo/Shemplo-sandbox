@@ -18,10 +18,10 @@ import ru.shemplo.snowball.utils.fp.StreamUtils;
 public class MelanomaGraphReader implements GraphReader {
 
     @Override
-    public Graph readGraph () throws IOException {
+    public Graph readGraph (String __) throws IOException {
         List <Pair <String, String>> edgesDesc = readEdges ();
         Map <String, Double> genesDesc = readGenes ();
-        Graph graph = new Graph ();
+        Graph graph = new Graph (0.093, 0.353);
         
         edgesDesc = edgesDesc.stream ()
                   . filter  (pair -> genesDesc.containsKey (pair.F)

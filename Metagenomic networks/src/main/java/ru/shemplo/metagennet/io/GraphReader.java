@@ -6,6 +6,6 @@ import ru.shemplo.metagennet.graph.Graph;
 
 public interface GraphReader {
     
-    public Graph readGraph () throws IOException;
+    public Graph readGraph (String filename) throws IOException;
     
 }

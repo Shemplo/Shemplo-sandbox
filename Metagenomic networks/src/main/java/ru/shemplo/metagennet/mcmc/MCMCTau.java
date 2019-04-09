@@ -50,7 +50,7 @@ public class MCMCTau implements MCMC {
         }
     }
     
-    @Getter private int starts = 0;
+    @Getter private int starts = 0, commits = 0;
     
     @Override
     public void makeIteration (boolean idling) {
