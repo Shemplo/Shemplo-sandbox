@@ -14,6 +14,7 @@ import ru.shemplo.snowball.stuctures.Trio;
 public class GraphDescriptor implements Cloneable {
 
     private final Random R = new Random ();
+    @SuppressWarnings ("unused")
     private final double betaAV, betaAE;
     
     private final boolean signal;
@@ -81,7 +82,8 @@ public class GraphDescriptor implements Cloneable {
             if (edge.F.getId () > edge.S.getId ()) { continue; }
             
             String appendix = "";
-            if (vertices.contains (edge.F) && vertices.contains (edge.S)) {
+            if (vertices.contains (edge.F) && vertices.contains (edge.S)
+                    && edges.contains (edge)) {
                 appendix = "[color = red]";
             }
             sj.add (String.format ("    V%d -- V%d [label = \"%f\"]%s;", 
@@ -125,6 +127,7 @@ public class GraphDescriptor implements Cloneable {
     }
     
     public GraphDescriptor addEdge (Edge edge) {
+        if (edges.contains (edge)) { return this; }
         history.add (Trio.mt (0, edge, likelihood));
         applyAdd (edge);
         return this;
@@ -158,8 +161,9 @@ public class GraphDescriptor implements Cloneable {
                 if (!modules.containsKey (module)) {
                     modules.put (module, new HashSet <> ());
                     
-                    final double w = vertex.getWeight ();                
-                    likelihood *= betaAV * Math.pow (w, betaAV);
+                    final double w = vertex.getWeight ();
+                    //likelihood *= betaAV * Math.pow (w, betaAV);
+                    likelihood /= w;
                 }
                 
                 modules.get (module).add (vertex);
@@ -223,7 +227,8 @@ public class GraphDescriptor implements Cloneable {
                 
                 if (set.isEmpty ()) {
                     final double w = vertex.getWeight ();
-                    likelihood /= betaAV * Math.pow (w, betaAV);
+                    //likelihood /= betaAV * Math.pow (w, betaAV);
+                    likelihood *= w;
                 }
             }
         }

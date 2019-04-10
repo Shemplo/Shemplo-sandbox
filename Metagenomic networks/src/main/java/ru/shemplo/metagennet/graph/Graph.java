@@ -1,14 +1,14 @@
 package ru.shemplo.metagennet.graph;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import ru.shemplo.metagennet.mcmc.MCMC;
 import ru.shemplo.metagennet.mcmc.MCMCDefault;
+import ru.shemplo.snowball.stuctures.Pair;
 
 @RequiredArgsConstructor
 public class Graph {
@@ -44,6 +44,50 @@ public class Graph {
         descriptor.getEdges ().addAll (edgesList);
         
         return descriptor;
+    }
+    
+    public GraphDescriptor getFinalDescriptor (int size, Map <Vertex, Double> occurrences) {
+        GraphDescriptor graph = new GraphDescriptor (alphaV, alphaE, false, this);
+        Set <Vertex> basis = occurrences.entrySet ().stream ()
+                           . map     (Pair::fromMapEntry)
+                           //. filter  (pair -> !pair.getF ().getName ().equals ("UBC"))
+                           . sorted  ((a, b) -> -Double.compare (a.S, b.S))
+                           . limit   (size)
+                           . map     (Pair::getF)
+                           . collect (Collectors.toSet ());
+        Set <Vertex> copy = new HashSet <> (basis);
+        Vertex start = basis.iterator ().next ();
+        basis.remove (start);
+        
+        Queue <Vertex> queue = new LinkedList <> ();
+        queue.add (start);
+        
+        Map <Vertex, List <Edge>> ways = new HashMap <> ();
+        ways.put (start, new ArrayList <> ());
+        
+        while (!basis.isEmpty ()) {
+            Vertex vertex = queue.poll ();
+            
+            for (Pair <Vertex, Edge> edge : vertex.getEdgesList ()) {
+                List <Edge> way = new ArrayList <> (ways.get (vertex));
+                way.add (edge.S);
+                
+                if (!ways.containsKey (edge.F) || (ways.get (edge.F).size () > way.size ())) {
+                    ways.put (edge.F, way);
+                    queue.add (edge.F);
+                }
+            }
+            
+            basis.remove (vertex);
+        }
+        
+        for (Vertex vertex : copy) {
+            for (Edge edge : ways.get (vertex)) {
+                graph.addEdge (edge).commit ();
+            }
+        }
+        
+        return graph.commit ();
     }
     
     public Vertex addVertex (int id, Double weight) {
