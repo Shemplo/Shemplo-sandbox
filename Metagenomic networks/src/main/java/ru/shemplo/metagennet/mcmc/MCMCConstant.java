@@ -5,9 +5,9 @@ import static ru.shemplo.metagennet.RunMetaGenMCMC.*;
 import ru.shemplo.metagennet.graph.Edge;
 import ru.shemplo.metagennet.graph.GraphDescriptor;
 
-public class MCMCFixed extends AbsMCMC {
+public class MCMCConstant extends AbsMCMC {
     
-    public MCMCFixed (GraphDescriptor initialGraph, int iterations) {
+    public MCMCConstant (GraphDescriptor initialGraph, int iterations) {
         super (initialGraph, iterations);
     }
 
@@ -58,7 +58,7 @@ public class MCMCFixed extends AbsMCMC {
         double mod = qS2Ss / qSs2S;
         //System.out.println (pS + " " + pSs + " " + (pSs / pS));
         if (idling) { pSs = 1.0; pS = 1.0; } // do not consider likelihood
-        double rho = Math.min (1.0, pSs * mod);
+        double rho = Math.min (1.0, pSs / mod);
         //System.out.println ("Rho: " + rho);
         
         //System.out.println (rho);

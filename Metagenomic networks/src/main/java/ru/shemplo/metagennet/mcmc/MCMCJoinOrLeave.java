@@ -5,9 +5,9 @@ import static ru.shemplo.metagennet.RunMetaGenMCMC.*;
 import ru.shemplo.metagennet.graph.Edge;
 import ru.shemplo.metagennet.graph.GraphDescriptor;
 
-public class MCMCDefault extends AbsMCMC {
+public class MCMCJoinOrLeave extends AbsMCMC {
     
-    public MCMCDefault (GraphDescriptor initialGraph, int iterations) {
+    public MCMCJoinOrLeave (GraphDescriptor initialGraph, int iterations) {
         super (initialGraph, iterations);
     }
 
@@ -38,7 +38,7 @@ public class MCMCDefault extends AbsMCMC {
         if (currentGraph.getEdges ().contains (candidat)) {
             //System.out.println ("remove");
             //qS2Ss = 1.0 / Math.max (currentGraph.getInnerEdges (), 1);
-            qS2Ss = 1.0 / Math.max (currentGraph.getVertices ().size (), 1);
+            qS2Ss = 1.0 / Math.max (currentGraph.getEdges ().size (), 1);
             //System.out.println ("IE " + currentGraph.getEdges ());
             //System.out.println ("R in " + currentGraph.getInnerEdges ());
             if (!currentGraph.removeEdge (candidat).isConnected ()) {
@@ -47,13 +47,13 @@ public class MCMCDefault extends AbsMCMC {
             //System.out.println ("connected");
             
             //qSs2S = 1.0 / Math.max (currentGraph.getBorderEdges (), 1);
-            qSs2S = 1.0 / Math.max (currentGraph.getBorderVertices (), 1);
+            qSs2S = 1.0 / Math.max (currentGraph.getBorderEdges (), 1);
             //System.out.println ("BE " + currentGraph.getBedges ());
             //System.out.println ("R bord " + currentGraph.getBorderEdges ());
         } else {
             //System.out.println ("add");
             //qS2Ss = 1.0 / Math.max (currentGraph.getBorderEdges (), 1);
-            qS2Ss = 1.0 / Math.max (currentGraph.getBorderVertices (), 1);
+            qS2Ss = 1.0 / Math.max (currentGraph.getBorderEdges (), 1);
             //System.out.println ("BE " + currentGraph.getBedges ());
             //System.out.println ("A bord " + currentGraph.getBorderEdges ());
             if (!currentGraph.addEdge (candidat).isConnected ()) {
@@ -62,7 +62,7 @@ public class MCMCDefault extends AbsMCMC {
             //System.out.println ("connected");
             
             //qSs2S = 1.0 / Math.max (currentGraph.getInnerEdges (), 1);
-            qSs2S = 1.0 / Math.max (currentGraph.getVertices ().size (), 1);
+            qSs2S = 1.0 / Math.max (currentGraph.getEdges ().size (), 1);
             //System.out.println ("A in " + currentGraph.getInnerEdges ());
             //System.out.println ("IE " + currentGraph.getEdges ());
         }
@@ -75,7 +75,7 @@ public class MCMCDefault extends AbsMCMC {
         double mod = qS2Ss / qSs2S;
         //System.out.println (qSs2S + " " + qS2Ss + " " + mod);
         if (idling) { pSs = 1.0; pS = 1.0; } // do not consider likelihood
-        double rho = Math.min (1.0, pSs * mod);
+        double rho = Math.min (1.0, pSs / mod);
         //System.out.println ("Rho: " + rho);
         
         //System.out.println (rho);

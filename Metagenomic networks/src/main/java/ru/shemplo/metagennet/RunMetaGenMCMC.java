@@ -12,22 +12,23 @@ import java.util.stream.Collectors;
 import ru.shemplo.metagennet.graph.Graph;
 import ru.shemplo.metagennet.graph.GraphDescriptor;
 import ru.shemplo.metagennet.graph.Vertex;
+import ru.shemplo.metagennet.io.CSVGraphReader;
 import ru.shemplo.metagennet.io.CommonWriter;
 import ru.shemplo.metagennet.io.GraphReader;
-import ru.shemplo.metagennet.io.MelanomaGraphReader;
 import ru.shemplo.metagennet.mcmc.MCMC;
-import ru.shemplo.metagennet.mcmc.MCMCFixed;
+import ru.shemplo.metagennet.mcmc.MCMCJoinOrLeave;
 import ru.shemplo.snowball.stuctures.Pair;
 
 public class RunMetaGenMCMC {
     
     public static final Random RANDOM = new Random ();
     
-    private static final int TRIES = 10, ITERATIONS = 1000;
-    private static final boolean SIGNALS = true;
+    private static final int TRIES = 10, ITERATIONS = 100000;
+    private static final boolean SIGNALS = false;
+    private static final int MODULE_SIZE = 20;
     
     private static final BiFunction <GraphDescriptor, Integer, MCMC> SUPPLIER = 
-        (graph, iterations) -> new MCMCFixed (graph, iterations);
+        (graph, iterations) -> new MCMCJoinOrLeave (graph, iterations);
     
     private static final ExecutorService pool = Executors.newFixedThreadPool (3);
     private static final Map <Vertex, Double> occurrences = new HashMap <> ();
@@ -36,7 +37,7 @@ public class RunMetaGenMCMC {
     public static void main (String ... args) throws IOException, InterruptedException {
         Locale.setDefault (Locale.ENGLISH);
         
-        GraphReader reader = new MelanomaGraphReader ();
+        GraphReader reader = new CSVGraphReader ();
         Graph initial = reader.readGraph ("paper_");
         System.out.println ("Graph loaded");
         
@@ -65,7 +66,7 @@ public class RunMetaGenMCMC {
         //Graph initial = new Graph (graphMatrix, null);
         
         for (int i = 0; i < TRIES; i++) {
-            GraphDescriptor descriptor = initial.getFixedDescriptor (10, SIGNALS);
+            GraphDescriptor descriptor = initial.getFixedDescriptor (MODULE_SIZE, SIGNALS);
             System.out.println ("Initial descriptor:");
             System.out.println (descriptor);
             /*
@@ -147,7 +148,6 @@ public class RunMetaGenMCMC {
         
         writer.saveMap ("runtime/mcmc_results.txt", "probability", occurrences);
         
-        /*
         Set <String> orintier = new HashSet <> (Arrays.asList (
             "APEX1", "BCL2", "BCL6", "CD44", "CCND2", "CREBBP", 
             "HCK", "HDAC1", "IL16", "LYN", "IRF4", "MYBL1", 
@@ -155,8 +155,8 @@ public class RunMetaGenMCMC {
             "TGFBR2", "WEE1", "VCL", "BLNK", "BMF", "SH3BP5", 
             "KCNA3"
         ));
-        */
         
+        /*
         Set <String> orintier = new HashSet <> (Arrays.asList (
             "CDKN2A", "MTAP", "MX2", "PARP1", "ARNT", "SETDB1",
             "ATM", "CCND1", "PLA2G6", "RAD23B", "TMEM38B", "FT0",
@@ -164,6 +164,7 @@ public class RunMetaGenMCMC {
             "PPP1R15A", "CTR9", "ZNF490", "B2M", "GRAMD3",
             "TOR1AIP1", "MTTP", "ATRIP", "TAF1", "ELAVL1"
         ));
+        */
         
         List <Pair <Vertex, Double>> matched = occurrences.entrySet ().stream ()
                                              . map     (Pair::fromMapEntry)
@@ -177,7 +178,7 @@ public class RunMetaGenMCMC {
         System.out.println ("(" + matched.size () + " / " + orintier.size () + ") " + sj.toString ());
         
         GraphDescriptor finalD = graph.getFinalDescriptor (orintier.size (), occurrences);
-        writer.saveGradientDOTFile ("runtime/final.dot", finalD, occurrences, Color.GREEN, Color.WHITE);
+        writer.saveGradientDOTFile ("runtime/final.dot", finalD, occurrences, Color.YELLOW, Color.GRAY);
     }
     
 }

@@ -7,7 +7,7 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import ru.shemplo.metagennet.mcmc.MCMC;
-import ru.shemplo.metagennet.mcmc.MCMCDefault;
+import ru.shemplo.metagennet.mcmc.MCMCJoinOrLeave;
 import ru.shemplo.snowball.stuctures.Pair;
 
 @RequiredArgsConstructor
@@ -15,9 +15,9 @@ public class Graph {
     
     private final double alphaV, alphaE;
     
-    @Getter private List <Edge> edgesList = new ArrayList <> ();
-    @Getter private List <Vertex> vertices = new ArrayList <> ();
     @Getter @Setter private GraphModules modules = new GraphModules ();
+    @Getter private List <Vertex> vertices = new ArrayList <> ();
+    @Getter private List <Edge> edgesList = new ArrayList <> ();
     
     public GraphDescriptor getEmptyDescriptor (boolean useSignal) {
         GraphDescriptor descriptor = new GraphDescriptor (alphaV, alphaE, useSignal, this);
@@ -27,7 +27,7 @@ public class Graph {
     }
     
     public GraphDescriptor getFixedDescriptor (int verts, boolean useSignal) {
-        MCMC mcmc = new MCMCDefault (getEmptyDescriptor (useSignal), 1000000);
+        MCMC mcmc = new MCMCJoinOrLeave (getEmptyDescriptor (useSignal), 1000000);
         mcmc.makeIteration (true);
         
         while (mcmc.getCurrentGraph ().getVertices ().size () < verts 
@@ -81,9 +81,22 @@ public class Graph {
             basis.remove (vertex);
         }
         
+        Set <Vertex> top = occurrences.entrySet ().stream ()
+                         . map     (Pair::fromMapEntry)
+                         . sorted  ((a, b) -> -Double.compare (a.S, b.S))
+                         . limit   (100)
+                         . map     (Pair::getF)
+                         . collect (Collectors.toSet ());
+        
         for (Vertex vertex : copy) {
             for (Edge edge : ways.get (vertex)) {
-                graph.addEdge (edge).commit ();
+                graph.addEdge (edge);
+            }
+            
+            for (Pair <Vertex, Edge> edge : vertex.getEdgesList ()) {
+                if (top.contains (edge.F)) {
+                    graph.addEdge (edge.S);
+                }
             }
         }
         

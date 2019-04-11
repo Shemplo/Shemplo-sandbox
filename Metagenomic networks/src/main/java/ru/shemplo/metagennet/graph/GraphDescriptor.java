@@ -14,7 +14,6 @@ import ru.shemplo.snowball.stuctures.Trio;
 public class GraphDescriptor implements Cloneable {
 
     private final Random R = new Random ();
-    @SuppressWarnings ("unused")
     private final double betaAV, betaAE;
     
     private final boolean signal;
@@ -24,11 +23,11 @@ public class GraphDescriptor implements Cloneable {
           = new LinkedList <> ();
     
     @Getter private final Map <GraphModule, Set <Vertex>> modules = new HashMap <> ();
-    @Getter private final Set <Vertex> vertices = new HashSet <> ();
-    @Getter private final Set <Edge> edges  = new HashSet <> (),
-                                     bedges = new HashSet <> ();
+    @Getter private final Set <Vertex> vertices = new LinkedHashSet <> ();
+    @Getter private final Set <Edge> edges  = new LinkedHashSet <> (),
+                                     bedges = new LinkedHashSet <> ();
     
-    private double likelihood = 1;
+    private double ratio = 1;
     
     @Override
     public String toString () {
@@ -102,7 +101,7 @@ public class GraphDescriptor implements Cloneable {
             history.pollLast ();
         }
         
-        this.likelihood = 1.0d;
+        this.ratio = 1.0d;
         return this;
     }
     
@@ -119,16 +118,16 @@ public class GraphDescriptor implements Cloneable {
                 //bedges.remove (event.S);
             }
             
-            likelihood = event.T;
+            ratio = event.T;
         }
         
-        if (!signal) { likelihood = 1; }
+        if (!signal) { ratio = 1; }
         return this;
     }
     
     public GraphDescriptor addEdge (Edge edge) {
         if (edges.contains (edge)) { return this; }
-        history.add (Trio.mt (0, edge, likelihood));
+        history.add (Trio.mt (0, edge, ratio));
         applyAdd (edge);
         return this;
     }
@@ -138,8 +137,8 @@ public class GraphDescriptor implements Cloneable {
         
         if (!signal) {
             final double w = edge.getWeight ();
-            //likelihood *= /*betaAE */ Math.pow (w, betaAE);
-            likelihood /= w;
+            //ratio *= betaAE * Math.pow (w, betaAE - 1);
+            ratio *= Math.pow (w, betaAE - 1);
         }
         
         applyVertexAdd (edge.F, edge);
@@ -154,16 +153,15 @@ public class GraphDescriptor implements Cloneable {
             
             if (!signal) {
                 final double w = vertex.getWeight ();
-                //likelihood *= /*betaAV */ Math.pow (w, betaAV);
-                likelihood /= w;
+                ratio *= betaAV * Math.pow (w, betaAV - 1);
             } else {
                 GraphModule module = graph.getModules ().getModule (vertex);
                 if (!modules.containsKey (module)) {
                     modules.put (module, new HashSet <> ());
                     
                     final double w = vertex.getWeight ();
-                    //likelihood *= betaAV * Math.pow (w, betaAV);
-                    likelihood /= w;
+                    //ratio *= betaAV * Math.pow (w, betaAV - 1);
+                    ratio *= Math.pow (w, betaAE - 1);
                 }
                 
                 modules.get (module).add (vertex);
@@ -172,7 +170,7 @@ public class GraphDescriptor implements Cloneable {
     }
     
     public GraphDescriptor removeEdge (Edge edge) {
-        history.add (Trio.mt (1, edge, likelihood));
+        history.add (Trio.mt (1, edge, ratio));
         applyRemove (edge);
         return this;
     }
@@ -183,9 +181,8 @@ public class GraphDescriptor implements Cloneable {
         
         if (!signal) {
             final double w = edge.S.getWeight ();            
-            //likelihood /= betaAE * Math.pow (w, betaAE);
-            //likelihood *= /*betaAE */ Math.pow (w, betaAE);
-            likelihood *= w;
+            //ratio /= betaAE * Math.pow (w, betaAE - 1);
+            ratio /= Math.pow (w, betaAE - 1);
         }
         
         applyVertex (edge.F, edge, 1);
@@ -210,15 +207,16 @@ public class GraphDescriptor implements Cloneable {
             for (Pair <Vertex, Edge> nei : vertex.getEdgesList ()) {
                 if (!vertices.contains (nei.F)) {
                     bedges.remove (nei.S);
+                } else {
+                    bedges.add (nei.S);
                 }
             }
             vertices.remove (vertex); 
             
             if (!signal) {
                 final double w = vertex.getWeight ();
-                //likelihood /= betaAV * Math.pow (w, betaAV);
-                //likelihood *= /*betaAV */ Math.pow (w, betaAV);
-                likelihood *= w;
+                //ratio /= betaAV * Math.pow (w, betaAV - 1);
+                ratio /= Math.pow (w, betaAV - 1);
             } else {
                 GraphModule module = graph.getModules ().getModule (vertex);
                 Set <Vertex> set = modules.get (module);
@@ -227,8 +225,8 @@ public class GraphDescriptor implements Cloneable {
                 
                 if (set.isEmpty ()) {
                     final double w = vertex.getWeight ();
-                    //likelihood /= betaAV * Math.pow (w, betaAV);
-                    likelihood *= w;
+                    //ratio /= betaAV * Math.pow (w, betaAV - 1);
+                    ratio /= Math.pow (w, betaAV - 1);
                 }
             }
         }
@@ -317,7 +315,7 @@ public class GraphDescriptor implements Cloneable {
     }
     
     public double getLikelihood () {
-        return likelihood;
+        return ratio;
     }
     
     public Edge getRandomGraphEdge (boolean shouldBeConnected) {

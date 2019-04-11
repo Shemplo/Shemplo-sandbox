@@ -1,7 +1,7 @@
 package ru.shemplo.metagennet.graph;
 
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -13,7 +13,7 @@ import ru.shemplo.snowball.stuctures.Pair;
 public class Vertex {
     
     @Getter private final List <Pair <Vertex, Edge>> edgesList = new ArrayList <> ();
-    @Getter private final Map <Vertex, Edge> edges = new HashMap <> ();
+    @Getter private final Map <Vertex, Edge> edges = new LinkedHashMap <> ();
     
     @Getter private final int id;
     
