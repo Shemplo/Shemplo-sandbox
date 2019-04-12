@@ -23,7 +23,7 @@ public class MCMCConstant extends AbsMCMC {
         }
         
         @SuppressWarnings ("unused")
-        double pS = currentGraph.getLikelihood ();
+        double pS = currentGraph.getRatio ();
         //System.out.println (pS);
         
         //System.out.println (currentGraph);
@@ -36,9 +36,9 @@ public class MCMCConstant extends AbsMCMC {
         double qS2Ss = 0, qSs2S = 0;
         qS2Ss = 1.0 / Math.max (currentGraph.getBorderEdges (), 1);
         
-        final Edge candidatBorder = currentGraph.getRandomBorderEdge ();
-        final Edge candidatIn     = currentGraph.getRandomInnerEdge ();
-        currentGraph.addEdge (candidatBorder).removeEdge (candidatIn);
+        final Edge candidateBorder = currentGraph.getRandomBorderEdge ();
+        final Edge candidateIn     = currentGraph.getRandomInnerEdge ();
+        currentGraph.addEdge (candidateBorder).removeEdge (candidateIn);
         //System.out.println ("rm " + candidatIn + " / add " + candidatBorder);
         //System.out.println ("X>> " + currentGraph);
         if (!currentGraph.isConnected ()) {
@@ -54,11 +54,11 @@ public class MCMCConstant extends AbsMCMC {
         //System.out.println (currentGraph.getInnerEdges ().size ());
         //System.out.println (currentGraph.getOuterEdges ().size ());
         
-        double pSs = currentGraph.getLikelihood ();
-        double mod = qS2Ss / qSs2S;
+        double pSs = currentGraph.getRatio ();
+        double mod = qSs2S / qS2Ss;
         //System.out.println (pS + " " + pSs + " " + (pSs / pS));
         if (idling) { pSs = 1.0; pS = 1.0; } // do not consider likelihood
-        double rho = Math.min (1.0, pSs / mod);
+        double rho = Math.min (1.0, pSs * mod);
         //System.out.println ("Rho: " + rho);
         
         //System.out.println (rho);

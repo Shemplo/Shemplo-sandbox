@@ -24,24 +24,24 @@ public class MCMCJoinOrLeave extends AbsMCMC {
         }
         
         @SuppressWarnings ("unused")
-        double pS = currentGraph.getLikelihood ();
+        double pS = currentGraph.getRatio ();
         //System.out.println (pS);
         
         //int candidatIndex = RANDOM.nextInt (initialGraphEdges.size ());
         //Edge candidat = initialGraphEdges.get (candidatIndex);
         //System.out.print (candidat + " / " + opposite + " - ");
-        Edge candidat = currentGraph.getRandomGraphEdge (true);
+        Edge candidate = currentGraph.getRandomGraphEdge (true);
         //System.out.println (candidat);
         //System.out.println (currentGraph);
         
         double qS2Ss = 0, qSs2S = 0;
-        if (currentGraph.getEdges ().contains (candidat)) {
+        if (currentGraph.getEdges ().contains (candidate)) {
             //System.out.println ("remove");
             //qS2Ss = 1.0 / Math.max (currentGraph.getInnerEdges (), 1);
             qS2Ss = 1.0 / Math.max (currentGraph.getEdges ().size (), 1);
             //System.out.println ("IE " + currentGraph.getEdges ());
             //System.out.println ("R in " + currentGraph.getInnerEdges ());
-            if (!currentGraph.removeEdge (candidat).isConnected ()) {
+            if (!currentGraph.removeEdge (candidate).isConnected ()) {
                 currentGraph.rollback (); return;
             }
             //System.out.println ("connected");
@@ -56,7 +56,7 @@ public class MCMCJoinOrLeave extends AbsMCMC {
             qS2Ss = 1.0 / Math.max (currentGraph.getBorderEdges (), 1);
             //System.out.println ("BE " + currentGraph.getBedges ());
             //System.out.println ("A bord " + currentGraph.getBorderEdges ());
-            if (!currentGraph.addEdge (candidat).isConnected ()) {
+            if (!currentGraph.addEdge (candidate).isConnected ()) {
                 currentGraph.rollback (); return;
             }
             //System.out.println ("connected");
@@ -70,12 +70,12 @@ public class MCMCJoinOrLeave extends AbsMCMC {
         //System.out.println (currentGraph.getInnerEdges ().size ());
         //System.out.println (currentGraph.getOuterEdges ().size ());
         
-        double pSs = currentGraph.getLikelihood ();
+        double pSs = currentGraph.getRatio ();
         //System.out.println (pS + " " + pSs + " " + (pSs / pS));
-        double mod = qS2Ss / qSs2S;
+        double mod = qSs2S / qS2Ss;
         //System.out.println (qSs2S + " " + qS2Ss + " " + mod);
         if (idling) { pSs = 1.0; pS = 1.0; } // do not consider likelihood
-        double rho = Math.min (1.0, pSs / mod);
+        double rho = Math.min (1.0, pSs * mod);
         //System.out.println ("Rho: " + rho);
         
         //System.out.println (rho);

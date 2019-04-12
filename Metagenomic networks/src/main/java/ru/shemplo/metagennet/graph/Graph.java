@@ -15,9 +15,14 @@ public class Graph {
     
     private final double alphaV, alphaE;
     
-    @Getter @Setter private GraphModules modules = new GraphModules ();
+    @Getter @Setter private GraphSignals signals = new GraphSignals ();
     @Getter private List <Vertex> vertices = new ArrayList <> ();
     @Getter private List <Edge> edgesList = new ArrayList <> ();
+    
+    @Getter
+    private final Set <String> orientier = new HashSet <> ();
+    
+    private final Map <String, Vertex> names = new HashMap <> ();
     
     public GraphDescriptor getEmptyDescriptor (boolean useSignal) {
         GraphDescriptor descriptor = new GraphDescriptor (alphaV, alphaE, useSignal, this);
@@ -113,8 +118,15 @@ public class Graph {
             vertices.add (null);
         }
         
+        if (vertex.getName () != null) {
+            names.put (vertex.getName (), vertex);
+        }
         vertices.set (id, vertex);
         return vertex;
+    }
+    
+    public Vertex getVertexByName (String name) {
+        return names.get (name);
     }
     
     public void addEdge (int a, int b, Double weight) {
@@ -127,14 +139,18 @@ public class Graph {
     
     public void addEdge (Edge edge) {
         addVertex (edge.F);
+        /*
         if (vertices.get (edge.F.getId ()) == null) {
             addVertex (edge.F);
         }
+        */
         
         addVertex (edge.S);
+        /*
         if (vertices.get (edge.S.getId ()) == null) {
             addVertex (edge.S);
         }
+        */
         
         edge.F.addEdge (edge);
         edge.S.addEdge (edge);

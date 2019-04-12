@@ -10,7 +10,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import ru.shemplo.metagennet.graph.Graph;
-import ru.shemplo.metagennet.graph.GraphModules;
+import ru.shemplo.metagennet.graph.GraphSignals;
 import ru.shemplo.snowball.stuctures.Pair;
 import ru.shemplo.snowball.utils.StringManip;
 import ru.shemplo.snowball.utils.fp.StreamUtils;
@@ -21,7 +21,7 @@ public class MelanomaGraphReader implements GraphReader {
     public Graph readGraph (String __) throws IOException {
         List <Pair <String, String>> edgesDesc = readEdges ();
         Map <String, Double> genesDesc = readGenes ();
-        Graph graph = new Graph (0.093, 0.353);
+        Graph graph = new Graph (0.668, 1.0);
         
         edgesDesc = edgesDesc.stream ()
                   . filter  (pair -> genesDesc.containsKey (pair.F)
@@ -39,11 +39,17 @@ public class MelanomaGraphReader implements GraphReader {
             gene2index.put (name, i);
         }
         
+        Set <String> remove = new HashSet <> (Arrays.asList ("UBC"));
+        
         for (Pair <String, String> edge : edgesDesc) {
+            if (remove.contains (edge.F) || remove.contains (edge.S)) {
+                continue;
+            }
+            
             graph.addEdge (gene2index.get (edge.F), gene2index.get (edge.S), 1.0);
         }
         
-        graph.setModules (GraphModules.splitGraph (graph));
+        graph.setSignals (GraphSignals.splitGraph (graph));
         /*
         GraphModules modules = graph.getModules ();
         modules.getModules ().forEach ((vert, module) -> {
@@ -51,6 +57,14 @@ public class MelanomaGraphReader implements GraphReader {
             module.getVertices ().forEach (System.out::println);
         });
         */
+        
+        graph.getOrientier ().addAll (Arrays.asList (
+            "CDKN2A", "MTAP", "MX2", "PARP1", "ARNT", "SETDB1",
+            "ATM", "CCND1", "PLA2G6", "RAD23B", "TMEM38B", "FT0",
+            "AGR3", "RMDN2", "CASP8", "CDKAL1", "DIP2B", "EBF3",
+            "PPP1R15A", "CTR9", "ZNF490", "B2M", "GRAMD3",
+            "TOR1AIP1", "MTTP", "ATRIP", "TAF1", "ELAVL1"
+        ));
         return graph;
     }
     

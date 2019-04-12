@@ -7,24 +7,25 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import lombok.*;
 
-public class GraphModules {
+public class GraphSignals {
     
-    public static GraphModules splitGraph (Graph graph) {
-        GraphModules modules = new GraphModules ();
+    public static GraphSignals splitGraph (Graph graph) {
+        GraphSignals modules = new GraphSignals ();
         Map <Double, List <Vertex>> mds = graph.getVertices ().stream ()
+                                        . filter  (Objects::nonNull)
                                         . collect (groupingBy (Vertex::getWeight));
         AtomicInteger iterator = new AtomicInteger (0);
         mds.forEach ((weight, vertices) -> {
             if (weight <= 0.05) {
                 final Set <Vertex> set = new HashSet <> (vertices);
-                modules.addModule (new GraphModule (iterator.getAndIncrement (),
+                modules.addSignal (new GraphSignal (iterator.getAndIncrement (),
                                                     set, weight));                
             } else {
                 for (Vertex vertex : vertices) {
                     Set <Vertex> set = new HashSet <> ();
                     set.add (vertex);
                     
-                    modules.addModule (new GraphModule (iterator.getAndIncrement (),
+                    modules.addSignal (new GraphSignal (iterator.getAndIncrement (),
                                                         set, weight));
                 }
             }
@@ -34,24 +35,24 @@ public class GraphModules {
     }
     
     @Getter
-    private final Map <Integer, GraphModule> modules = new HashMap <> ();
+    private final Map <Integer, GraphSignal> modules = new HashMap <> ();
     
-    public void addModule (GraphModule module) {
+    public void addSignal (GraphSignal module) {
         module.vertices.forEach (vertex -> {
             modules.put (vertex.getId (), module);
         });
     }
     
-    public Double getLikelihood (Vertex vertex) {
+    public Double getRatio (Vertex vertex) {
         return modules.get (vertex.getId ()).getLikelihood ();
     }
     
-    public GraphModule getModule (Vertex vertex) {
+    public GraphSignal getSignal (Vertex vertex) {
         if (vertex == null) { return null; }
-        return getModule (vertex.getId ());
+        return getSignal (vertex.getId ());
     }
     
-    public GraphModule getModule (Integer vertexID) {
+    public GraphSignal getSignal (Integer vertexID) {
         if (vertexID == null) { return null; }
         return modules.get (vertexID);
     }
@@ -59,9 +60,9 @@ public class GraphModules {
     @ToString
     @RequiredArgsConstructor
     @EqualsAndHashCode (exclude = {"likelihood", "vertices"})
-    public static class GraphModule {
+    public static class GraphSignal {
         
-        private final int id;
+        @Getter private final int id;
         
         @Getter
         private final Set <Vertex> vertices;

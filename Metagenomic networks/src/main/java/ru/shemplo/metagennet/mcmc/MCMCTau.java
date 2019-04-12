@@ -80,7 +80,7 @@ public class MCMCTau implements MCMC {
                 currentGraph.rollback (); return;
             }
             //System.out.println ("connected");
-            pS = currentGraph.getLikelihood ();
+            pS = currentGraph.getRatio ();
             pSs = Math.pow (TAU, BETA_A_E + BETA_A_V);
         } else {
             //System.out.println ("add");
@@ -88,7 +88,7 @@ public class MCMCTau implements MCMC {
                 currentGraph.rollback (); return;
             }
             //System.out.println ("connected");
-            pSs = currentGraph.getLikelihood ();
+            pSs = currentGraph.getRatio ();
             pS = Math.pow (TAU, BETA_A_E + BETA_A_V);
         }
         

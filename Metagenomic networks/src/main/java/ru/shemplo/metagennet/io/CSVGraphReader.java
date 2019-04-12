@@ -21,9 +21,9 @@ import ru.shemplo.snowball.utils.StringManip;
 public class CSVGraphReader implements GraphReader {
     
     @Override
-    public Graph readGraph (String filename) throws IOException {
-        Pair <List <String>, List <List <String>>> verticesCSV = readCSV ("runtime/" + filename + "vertices.csv");
-        Pair <List <String>, List <List <String>>> edgesCSV = readCSV ("runtime/" + filename + "edges.csv");
+    public Graph readGraph (String filenamePrefix) throws IOException {
+        Pair <List <String>, List <List <String>>> verticesCSV = readCSV ("runtime/" + filenamePrefix + "vertices.csv");
+        Pair <List <String>, List <List <String>>> edgesCSV = readCSV ("runtime/" + filenamePrefix + "edges.csv");
         
         int nameColumnV = verticesCSV.F.indexOf ("\"geneSymbol\"") != -1
                         ? verticesCSV.F.indexOf ("\"geneSymbol\"")
@@ -63,21 +63,31 @@ public class CSVGraphReader implements GraphReader {
             graph.addEdge (edgeI);
         });
         
+        if (filenamePrefix.equals ("paper_")) {
+            graph.getOrientier ().addAll (Arrays.asList (
+                "APEX1", "BCL2", "BCL6", "CD44", "CCND2", "CREBBP", 
+                "HCK", "HDAC1", "IL16", "LYN", "IRF4", "MYBL1", 
+                "MME", "PTK2", "PIM1", "MAPK10", "PTPN2", "PTPN1", 
+                "TGFBR2", "WEE1", "VCL", "BLNK", "BMF", "SH3BP5", 
+                "KCNA3"
+            ));
+        }
+        
         return graph;
     }
     
-    private Pair <List <String>, List <List <String>>> readCSV (String filepath) throws IOException {
+    protected Pair <List <String>, List <List <String>>> readCSV (String filepath) throws IOException {
         final Path path = Paths.get (filepath);
         
         try (
             BufferedReader br = Files.newBufferedReader (path);
         ) {
-            List <String> titles = Arrays.asList (br.readLine ().split (";"));
+            List <String> titles = Arrays.asList (br.readLine ().split ("(\\s+|;)"));
             
             String line = null;
             List <List <String>> rows = new ArrayList <> ();
             while ((line = StringManip.fetchNonEmptyLine (br)) != null) {
-                rows.add (Arrays.asList (line.split (";")));
+                rows.add (Arrays.asList (line.split ("(\\s+|;)")));
             }
             
             return Pair.mp (titles, rows);

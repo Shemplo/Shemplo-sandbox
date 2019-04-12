@@ -3,30 +3,54 @@ package ru.shemplo.metagennet.io;
 import java.awt.Color;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
-import java.util.StringJoiner;
+import java.util.*;
+import java.util.stream.Collectors;
 
-import ru.shemplo.metagennet.graph.Edge;
-import ru.shemplo.metagennet.graph.GraphDescriptor;
-import ru.shemplo.metagennet.graph.Vertex;
+import ru.shemplo.metagennet.graph.*;
 import ru.shemplo.snowball.stuctures.Pair;
 
 public class CommonWriter {
     
     public void saveMap (String filepath, String parameter, 
-            Map <Vertex, Double> occurrences) {
+            Map <Vertex, Double> occurrences, Graph graph) {
         try (
             PrintWriter pw = new PrintWriter (filepath);
         ) {
-            pw.println ("gene\tpval\t" + parameter);
+            pw.println ("gene\tpval\tsignal\t" + parameter);
             occurrences.entrySet ().stream ()
             . map     (Pair::fromMapEntry)
             . sorted  ((a, b) -> -Double.compare (a.S, b.S))
             . forEach (p -> {
-                pw.println (String.format ("%9s\t%.12f\t%.6f", 
-                     p.F.getName (), p.F.getWeight (), p.S));
+                int signal = graph.getSignals ().getSignal (p.F).getId ();
+                pw.println (String.format ("%9s\t%.12f\t%6d\t%.6f", 
+                   p.F.getName (), p.F.getWeight (), signal, p.S));
+            });
+        } catch (IOException ioe) {
+            ioe.printStackTrace ();
+        }
+    }
+    
+    public void saveNontrivialSignalsMap (String filepath, String parameter, 
+            Map <Vertex, Double> occurrences, Graph graph) {
+        try (
+            PrintWriter pw = new PrintWriter (filepath);
+        ) {
+            pw.println ("gene\tpval\tsignal\t" + parameter);
+            
+            GraphSignals gsignals = graph.getSignals ();
+            Map <Integer, List <Vertex>> signals = occurrences.entrySet ().stream ()
+              . map     (Pair::fromMapEntry)
+              . map     (Pair::getF)
+              . collect (Collectors.groupingBy (v -> gsignals.getSignal (v).getId ()));
+            signals.entrySet ().stream ()
+            . map     (Pair::fromMapEntry)
+            . filter  (pair -> pair.S.size () > 1)
+            . forEach (pair -> {
+                pair.S.sort ((a, b) -> -Double.compare (occurrences.get (a), occurrences.get (b)));
+                pair.S.forEach (vertex -> {
+                    pw.println (String.format ("%9s\t%.12f\t%6d\t%.6f", vertex.getName (), 
+                                  vertex.getWeight (), pair.F, occurrences.get (vertex)));
+                });
             });
         } catch (IOException ioe) {
             ioe.printStackTrace ();

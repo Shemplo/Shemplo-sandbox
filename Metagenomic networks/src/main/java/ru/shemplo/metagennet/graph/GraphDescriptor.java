@@ -6,7 +6,7 @@ import java.util.stream.Collectors;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import ru.shemplo.metagennet.graph.GraphModules.GraphModule;
+import ru.shemplo.metagennet.graph.GraphSignals.GraphSignal;
 import ru.shemplo.snowball.stuctures.Pair;
 import ru.shemplo.snowball.stuctures.Trio;
 
@@ -22,12 +22,12 @@ public class GraphDescriptor implements Cloneable {
     private final Deque <Trio <Integer, Edge, Double>> history 
           = new LinkedList <> ();
     
-    @Getter private final Map <GraphModule, Set <Vertex>> modules = new HashMap <> ();
+    @Getter private final Map <GraphSignal, Set <Vertex>> modules = new HashMap <> ();
     @Getter private final Set <Vertex> vertices = new LinkedHashSet <> ();
     @Getter private final Set <Edge> edges  = new LinkedHashSet <> (),
                                      bedges = new LinkedHashSet <> ();
     
-    private double ratio = 1;
+    @Getter private double ratio = 1;
     
     @Override
     public String toString () {
@@ -155,7 +155,7 @@ public class GraphDescriptor implements Cloneable {
                 final double w = vertex.getWeight ();
                 ratio *= betaAV * Math.pow (w, betaAV - 1);
             } else {
-                GraphModule module = graph.getModules ().getModule (vertex);
+                GraphSignal module = graph.getSignals ().getSignal (vertex);
                 if (!modules.containsKey (module)) {
                     modules.put (module, new HashSet <> ());
                     
@@ -218,7 +218,7 @@ public class GraphDescriptor implements Cloneable {
                 //ratio /= betaAV * Math.pow (w, betaAV - 1);
                 ratio /= Math.pow (w, betaAV - 1);
             } else {
-                GraphModule module = graph.getModules ().getModule (vertex);
+                GraphSignal module = graph.getSignals ().getSignal (vertex);
                 Set <Vertex> set = modules.get (module);
                 //System.out.println (vertex + " " + module + " " + set);
                 set.remove (vertex);
@@ -312,10 +312,6 @@ public class GraphDescriptor implements Cloneable {
         }
         
         return null;
-    }
-    
-    public double getLikelihood () {
-        return ratio;
     }
     
     public Edge getRandomGraphEdge (boolean shouldBeConnected) {
