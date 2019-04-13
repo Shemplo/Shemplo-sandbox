@@ -1,59 +1,57 @@
 package ru.shemplo.metagennet.io;
 
 import java.io.IOException;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
-import ru.shemplo.metagennet.graph.Edge;
 import ru.shemplo.metagennet.graph.Graph;
 import ru.shemplo.metagennet.graph.GraphSignals;
-import ru.shemplo.metagennet.graph.Vertex;
 import ru.shemplo.snowball.stuctures.Pair;
 
-public class GWASGraphReader extends CSVGraphReader {
+public class GWASGraphReader extends MelanomaGraphReader {
     
     @Override
     public Graph readGraph (String filenamePrefix) throws IOException {
-        Pair <List <String>, List <List <String>>> edgesCSV = readCSV ("runtime/" + filenamePrefix + "edges.csv");
-        Pair <List <String>, List <List <String>>> verticesCSV = readCSV ("runtime/gwas.csv");
-        
-        AtomicInteger counter = new AtomicInteger ();
-        final Map <String, Vertex> vertices 
-            = verticesCSV.S.stream ().map (lst -> Pair.mp (lst.get (0), lst))
-            . map     (p -> p.applyS (lst -> {
-                final int index = counter.getAndIncrement ();
-                Double weight = null;
-                try   { weight = Double.parseDouble (lst.get (1).replace (',', '.')); } 
-                catch (NumberFormatException nfe) { weight = 1D; }
-                
-                Vertex vertex = new Vertex (index, weight);
-                vertex.setName (p.F.replace ("\"", ""));
-                return vertex;
-            }))
-            . collect (Collectors.toMap (Pair::getF, Pair::getS));
-        
-        int fromColumnE = edgesCSV.F.indexOf ("\"from\""),
-            toColumnR   = edgesCSV.F.indexOf ("\"to\"");
-        int pvalColumnE = edgesCSV.F.indexOf ("\"weight\"") != -1 
-                        ? edgesCSV.F.indexOf ("\"weight\"")
-                        : edgesCSV.F.indexOf ("\"pval\"");
+        Map <String, Double> genesDesc = readGenes ("runtime/gwas.csv", 0);
+        List <Pair <String, String>> edgesDesc = readEdges ();
         Graph graph = new Graph (0.571, 1.0);
-        edgesCSV.S.forEach (edge -> {
-            String from = edge.get (fromColumnE).replaceAll ("\\(\\d+\\)", "").replace ("\"", ""), 
-                   to   = edge.get (toColumnR).replaceAll ("\\(\\d+\\)", "").replace ("\"", "");
-            Double weight = null;
+        
+        edgesDesc = edgesDesc.stream ()
+                  . filter  (pair -> genesDesc.containsKey (pair.F)
+                                  && genesDesc.containsKey (pair.S))
+                  . collect (Collectors.toList ());
+        List <String> genesVerts = edgesDesc.stream ()
+                                 . flatMap  (pair -> Stream.of (pair.F, pair.S))
+                                 . distinct ().sorted ()
+                                 . collect  (Collectors.toList ());
+        Map <String, Integer> gene2index = new HashMap <> ();
+        for (int i = 0; i < genesVerts.size (); i++) {
+            String name = genesVerts.get (i);
+            graph.addVertex (i, genesDesc.get (name))
+                 .setName (name);
+            gene2index.put (name, i);
+        }
+        
+        Set <String> remove = new HashSet <> (Arrays.asList ("UBC"));
+        
+        for (Pair <String, String> edge : edgesDesc) {
+            if (remove.contains (edge.F) || remove.contains (edge.S)) {
+                continue;
+            }
             
-            try   { weight = Double.parseDouble (edge.get (pvalColumnE).replace (',', '.')); } 
-            catch (NumberFormatException nfe) { weight = 1D; }
-            
-            if (!vertices.containsKey (from) || !vertices.containsKey (to)) { return; }
-            Edge edgeI = new Edge (vertices.get (from), vertices.get (to), weight);
-            graph.addEdge (edgeI);
-        });
+            graph.addEdge (gene2index.get (edge.F), gene2index.get (edge.S), 1.0);
+        }
         
         graph.setSignals (GraphSignals.splitGraph (graph));
+        
+        graph.getOrientier ().addAll (Arrays.asList (
+            "CDKN2A", "MTAP", "MX2", "PARP1", "ARNT", "SETDB1",
+            "ATM", "CCND1", "PLA2G6", "RAD23B", "TMEM38B", "FT0",
+            "AGR3", "RMDN2", "CASP8", "CDKAL1", "DIP2B", "EBF3",
+            "PPP1R15A", "CTR9", "ZNF490", "B2M", "GRAMD3",
+            "TOR1AIP1", "MTTP", "ATRIP", "TAF1", "ELAVL1"
+        ));
         return graph;
     }
     

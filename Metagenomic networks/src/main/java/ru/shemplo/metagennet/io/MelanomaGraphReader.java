@@ -19,8 +19,8 @@ public class MelanomaGraphReader implements GraphReader {
 
     @Override
     public Graph readGraph (String __) throws IOException {
+        Map <String, Double> genesDesc = readGenes ("runtime/melanoma", 1);
         List <Pair <String, String>> edgesDesc = readEdges ();
-        Map <String, Double> genesDesc = readGenes ();
         Graph graph = new Graph (0.668, 1.0);
         
         edgesDesc = edgesDesc.stream ()
@@ -68,7 +68,7 @@ public class MelanomaGraphReader implements GraphReader {
         return graph;
     }
     
-    private List <Pair <String, String>> readEdges () throws IOException {
+    protected List <Pair <String, String>> readEdges () throws IOException {
         List <Pair <String, String>> edges = new ArrayList <> ();
         Path filepath = Paths.get ("runtime/inwebIM_ppi.txt");
         try (
@@ -84,9 +84,9 @@ public class MelanomaGraphReader implements GraphReader {
         return edges;
     }
     
-    private Map <String, Double> readGenes () throws IOException {
+    protected Map <String, Double> readGenes (String filename, int shift) throws IOException {
         final Map <String, Double> genes = new HashMap <> ();
-        Path filepath = Paths.get ("runtime/melanoma");
+        Path filepath = Paths.get (filename);
         try (
             BufferedReader br = Files.newBufferedReader (filepath);
         ) {
@@ -98,8 +98,8 @@ public class MelanomaGraphReader implements GraphReader {
                 List <String> tokens = StreamUtils.whilst (StringTokenizer::hasMoreTokens, 
                                                            StringTokenizer::nextToken, st)
                                      . collect (Collectors.toList ());
-                Double pvalue = Double.parseDouble (tokens.get (2));
-                genes.put (tokens.get (1), pvalue);
+                Double pvalue = Double.parseDouble (tokens.get (1 + shift));
+                genes.put (tokens.get (shift), pvalue);
             }
         }
         

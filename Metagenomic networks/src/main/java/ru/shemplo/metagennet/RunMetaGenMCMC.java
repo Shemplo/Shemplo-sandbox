@@ -23,7 +23,7 @@ public class RunMetaGenMCMC {
     
     public static final Random RANDOM = new Random ();
     
-    private static final int TRIES = 30, ITERATIONS = 250000;
+    private static final int TRIES = 100, ITERATIONS = 250000;
     private static final boolean SIGNALS = true;
     private static final int MODULE_SIZE = 50;
     
@@ -40,6 +40,10 @@ public class RunMetaGenMCMC {
         GraphReader reader = new GWASGraphReader ();
         Graph initial = reader.readGraph ("paper_");
         System.out.println ("Graph loaded");
+        
+        initial.getVertices ().stream ()
+        . filter  (Objects::nonNull)
+        . forEach (vertex -> occurrences.put (vertex, 0D));
         
         /*
         List <Double> aaa = initial.getEdgesList ().stream ()

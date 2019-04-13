@@ -45,6 +45,7 @@ public class CommonWriter {
             signals.entrySet ().stream ()
             . map     (Pair::fromMapEntry)
             . filter  (pair -> pair.S.size () > 1)
+            . sorted  ((a, b) -> Double.compare (a.S.get (0).getWeight (), b.S.get (0).getWeight ()))
             . forEach (pair -> {
                 pair.S.sort ((a, b) -> -Double.compare (occurrences.get (a), occurrences.get (b)));
                 pair.S.forEach (vertex -> {
