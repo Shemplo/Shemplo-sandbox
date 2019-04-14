@@ -23,9 +23,9 @@ public class RunMetaGenMCMC {
     
     public static final Random RANDOM = new Random ();
     
-    private static final int TRIES = 100, ITERATIONS = 250000;
+    private static final int TRIES = 50, ITERATIONS = 500000;
     private static final boolean SIGNALS = true;
-    private static final int MODULE_SIZE = 50;
+    private static final int MODULE_SIZE = 100;
     
     private static final BiFunction <GraphDescriptor, Integer, MCMC> SUPPLIER = 
         (graph, iterations) -> new MCMCConstant (graph, iterations);
@@ -143,7 +143,7 @@ public class RunMetaGenMCMC {
     }
     
     private static void printResults (Graph graph) {
-        writer.saveMap ("runtime/mcmc_frequences.csv", "frequency", occurrences, graph);
+        writer.saveMap ("runtime/mcmc_frequences.tsv", "frequency", occurrences, graph);
         
         double inRun = Math.max (1, ITERATIONS * 0.9 / 100);
         occurrences.keySet ().forEach (key -> {
@@ -151,10 +151,10 @@ public class RunMetaGenMCMC {
         });
         
         if (SIGNALS) {            
-            writer.saveNontrivialSignalsMap ("runtime/mcmc_nontrivial.csv", 
+            writer.saveNontrivialSignalsMap ("runtime/mcmc_nontrivial.tsv", 
                                         "probability", occurrences, graph);
         }
-        writer.saveMap ("runtime/mcmc_results.csv", "probability", occurrences, graph);
+        writer.saveMap ("runtime/mcmc_results.tsv", "probability", occurrences, graph);
         
         Set <String> orientier = graph.getOrientier ();
         if (orientier.size () > 0) {

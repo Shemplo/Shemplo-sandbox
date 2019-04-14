@@ -4,6 +4,7 @@ import static java.util.stream.Collectors.*;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 import lombok.*;
 
@@ -14,9 +15,17 @@ public class GraphSignals {
         Map <Double, List <Vertex>> mds = graph.getVertices ().stream ()
                                         . filter  (Objects::nonNull)
                                         . collect (groupingBy (Vertex::getWeight));
+        List <Double> weights = graph.getVertices ().stream ()
+                              . filter   (Objects::nonNull)
+                              . map      (Vertex::getWeight)
+                              . distinct ()
+                              . sorted   (Double::compare)
+                              . collect  (Collectors.toList ());
+        double threshold = weights.size () >= 100 ? weights.get (99):  0.05;
         AtomicInteger iterator = new AtomicInteger (0);
+        
         mds.forEach ((weight, vertices) -> {
-            if (weight <= 0.05) {
+            if (weight <= threshold) {
                 final Set <Vertex> set = new HashSet <> (vertices);
                 modules.addSignal (new GraphSignal (iterator.getAndIncrement (),
                                                     set, weight));                
