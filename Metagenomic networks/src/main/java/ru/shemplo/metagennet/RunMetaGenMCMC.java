@@ -23,8 +23,8 @@ public class RunMetaGenMCMC {
     
     public static final Random RANDOM = new Random ();
     
-    private static final int TRIES = 50, ITERATIONS = 500000;
-    private static final boolean SIGNALS = true;
+    private static final boolean SIGNALS = true, LONG_RUN = false;
+    private static final int TRIES = 50, ITERATIONS = 300000;
     private static final int MODULE_SIZE = 100;
     
     private static final BiFunction <GraphDescriptor, Integer, MCMC> SUPPLIER = 
@@ -117,11 +117,13 @@ public class RunMetaGenMCMC {
             );
             //System.out.println (i + " " + graph);
             
-            singleRun.getSnapshots ().forEach (gph -> {
-                gph.forEach (vertex -> 
-                    occurrences.compute (vertex, (___, v) -> v == null ? 1 : v + 1)
-                );
-            });
+            if (LONG_RUN) {
+                singleRun.getSnapshots ().forEach (gph -> {
+                    gph.forEach (vertex -> 
+                        occurrences.compute (vertex, (___, v) -> v == null ? 1 : v + 1)
+                    );
+                });
+            }
             
             size = singleRun.getCurrentGraph ().getVertices ().size ();
             
@@ -145,7 +147,7 @@ public class RunMetaGenMCMC {
     private static void printResults (Graph graph) {
         writer.saveMap ("runtime/mcmc_frequences.tsv", "frequency", occurrences, graph);
         
-        double inRun = Math.max (1, ITERATIONS * 0.9 / 100);
+        double inRun = LONG_RUN ? Math.max (1, ITERATIONS * 0.9 / 100) + 1 : 1;
         occurrences.keySet ().forEach (key -> {
             occurrences.compute (key, (__, v) -> v / (TRIES * inRun));
         });

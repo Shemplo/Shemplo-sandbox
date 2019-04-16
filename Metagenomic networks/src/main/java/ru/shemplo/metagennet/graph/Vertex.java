@@ -31,6 +31,14 @@ public class Vertex {
     @Getter @Setter
     @NonNull private Double weight;
     
+    public double getWeight (int iteration, int total) {
+        return iteration < total / 3
+             ? Math.pow (weight, -16)
+             : iteration < total * 2 / 3
+             ? Math.pow (weight, -8)
+             : weight;
+    }
+    
     public void addEdge (Edge edge) {
         Vertex vertex = edge.F.equals (this) ? edge.S : edge.F;
         edgesList.add (Pair.mp (vertex, edge));

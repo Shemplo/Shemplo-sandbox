@@ -126,40 +126,48 @@ public class GraphDescriptor implements Cloneable {
     }
     
     public GraphDescriptor addEdge (Edge edge) {
+        return addEdge (edge, 0, 0);
+    }
+    
+    public GraphDescriptor addEdge (Edge edge, int i, int total) {
         if (edges.contains (edge)) { return this; }
         history.add (Trio.mt (0, edge, ratio));
-        applyAdd (edge);
+        applyAdd (edge, i, total);
         return this;
     }
     
     private void applyAdd (Edge edge) {
+        applyAdd (edge, 0, 0);
+    }
+    
+    private void applyAdd (Edge edge, int i, int total) {
         edges.add (edge);
         
         if (!signal) {
-            final double w = edge.getWeight ();
+            final double w = edge.getWeight (i, total);
             //ratio *= betaAE * Math.pow (w, betaAE - 1);
             ratio *= Math.pow (w, betaAE - 1);
         }
         
-        applyVertexAdd (edge.F, edge);
-        applyVertexAdd (edge.S, edge);
+        applyVertexAdd (edge.F, edge, i, total);
+        applyVertexAdd (edge.S, edge, i, total);
         bedges.removeAll (edges);
     }
     
-    private void applyVertexAdd (Vertex vertex, Edge edge) {
+    private void applyVertexAdd (Vertex vertex, Edge edge, int i, int total) {
         if (!vertices.contains (vertex)) {
             vertices.add (vertex);
-            applyVertex (vertex, edge, 0);
+            applyVertex (vertex, edge, 0, i, total);
             
             if (!signal) {
-                final double w = vertex.getWeight ();
+                final double w = vertex.getWeight (i, total);
                 ratio *= betaAV * Math.pow (w, betaAV - 1);
             } else {
                 GraphSignal module = graph.getSignals ().getSignal (vertex);
                 if (!modules.containsKey (module)) {
                     modules.put (module, new HashSet <> ());
                     
-                    final double w = vertex.getWeight ();
+                    final double w = vertex.getWeight (i, total);
                     //ratio *= betaAV * Math.pow (w, betaAV - 1);
                     ratio *= Math.pow (w, betaAE - 1);
                 }
@@ -170,27 +178,35 @@ public class GraphDescriptor implements Cloneable {
     }
     
     public GraphDescriptor removeEdge (Edge edge) {
+        return removeEdge (edge, 0, 0);
+    }
+    
+    public GraphDescriptor removeEdge (Edge edge, int i, int total) {
         history.add (Trio.mt (1, edge, ratio));
-        applyRemove (edge);
+        applyRemove (edge, i, total);
         return this;
     }
     
     private void applyRemove (Edge edge) {
+        applyRemove (edge, 0, 0);
+    }
+    
+    private void applyRemove (Edge edge, int i, int total) {
         edges.remove (edge);
         bedges.add (edge);
         
         if (!signal) {
-            final double w = edge.S.getWeight ();            
+            final double w = edge.S.getWeight (i, total);            
             //ratio /= betaAE * Math.pow (w, betaAE - 1);
             ratio /= Math.pow (w, betaAE - 1);
         }
         
-        applyVertex (edge.F, edge, 1);
-        applyVertex (edge.S, edge, 1);
+        applyVertex (edge.F, edge, 1, i, total);
+        applyVertex (edge.S, edge, 1, i, total);
         bedges.removeAll (edges);
     }
     
-    private void applyVertex (Vertex vertex, Edge edge, int action) {
+    private void applyVertex (Vertex vertex, Edge edge, int action, int i, int total) {
         int neis = 0;
         if (action == 0) {
             // Extra edge (that is adding) will be removed later
@@ -214,7 +230,7 @@ public class GraphDescriptor implements Cloneable {
             vertices.remove (vertex); 
             
             if (!signal) {
-                final double w = vertex.getWeight ();
+                final double w = vertex.getWeight (i, total);
                 //ratio /= betaAV * Math.pow (w, betaAV - 1);
                 ratio /= Math.pow (w, betaAV - 1);
             } else {
@@ -224,7 +240,7 @@ public class GraphDescriptor implements Cloneable {
                 set.remove (vertex);
                 
                 if (set.isEmpty ()) {
-                    final double w = vertex.getWeight ();
+                    final double w = vertex.getWeight (i, total);
                     //ratio /= betaAV * Math.pow (w, betaAV - 1);
                     ratio /= Math.pow (w, betaAV - 1);
                 }
@@ -328,233 +344,5 @@ public class GraphDescriptor implements Cloneable {
         
         return edge;
     }
-    
-    /*
-    @SuppressWarnings ("unused")
-    private final boolean signal;
-    private final Graph graph;
-    
-    @Getter private final Set <Integer> 
-        vertices    = new HashSet <> ();
-    @Getter private final Set <Edge> 
-        edges       = new HashSet <> ();
-    private Set <Edge> borderEdges = new HashSet <> ();
-    
-    private Edge tmpEdgeAdd = null, tmpEdgeRemove = null;
-    
-    private boolean isAC (Edge edge) { // Add candidate
-        return edge.equals (tmpEdgeAdd);
-    }
-    
-    private boolean isRMC (Edge edge) { // Remove candidate
-        return edge.equals (tmpEdgeRemove);
-    }
-    
-    private boolean isActiveEdge (Edge edge) {
-        final boolean now = edges.contains (edge);
-        return (now && !isRMC (edge)) || (!now && isAC (edge));
-    }
-    
-    private static final Edge STUB_EDGE = new Edge (null, null, 1.0);
-    private static final Vertex STUB_VERTEX = new Vertex (0, 1.0);
-    private static final Random R = new Random ();
-    
-    public double getLikelihood (double betaAV, double betaAE, boolean stable) {
-        double pE  = Optional.ofNullable (stable ? pmEA : lmEA).orElse (STUB_EDGE)  .getWeight ();
-        double pV1 = Optional.ofNullable (stable ? pmVA : lmVA).orElse (STUB_VERTEX).getWeight ();
-        double pV2 = Optional.ofNullable (stable ? pmVB : lmVB).orElse (STUB_VERTEX).getWeight ();
-        
-        //System.out.println (pmEA + " " + lmEA.getWeight ());
-        //System.out.println (pE + " " + pV1 + " " + pV2);
-        double result = betaAE * Math.pow (pE, betaAE);
-        if (pV1 >= 0) {
-            result *= betaAV * Math.pow (pV1, betaAV);
-        }
-        if (pV2 >= 0) {
-            result *= betaAV * Math.pow (pV2, betaAV);
-        }
-        
-        return result;
-    }
-    
-    public double getModuleLikelihood (double betaAV, double betaAE, boolean stable) {
-        final GraphModules modules = graph.getModules ();
-        Set <GraphModule> modulesV = new HashSet <> ();
-        double result = 1.0d;
-        
-        return result;
-    }
-    
-    public GraphDescriptor commit () {
-        rollback (); // to clear all
-        return this;
-    }
-    
-    public GraphDescriptor rollback () {
-        tmpEdgeRemove = null;
-        tmpEdgeAdd = null; 
-        return this;
-    }
-    
-    public GraphDescriptor addEdge (Edge edge) {
-        tmpEdgeAdd = edge; return this;
-    }
-    
-    public GraphDescriptor removeEdge (Edge edge) {
-        tmpEdgeRemove = edge; return this;
-    }
-    
-    public boolean isConnected (boolean ignoreIfOneSingle, boolean trimIfOneSingle) {
-        if (vertices.size () == 0 || (tmpEdgeAdd == null && tmpEdgeRemove == null)) { 
-            return true; 
-        }
-        
-        if (tmpEdgeAdd != null && tmpEdgeRemove == null) {
-            return vertices.contains (tmpEdgeAdd.F.getId ())
-                || vertices.contains (tmpEdgeAdd.S.getId ());
-        } else if (tmpEdgeRemove != null) {
-            final Queue <Vertex> queue = new LinkedList <> ();
-            queue.add (tmpEdgeRemove.F);
-            
-            Set <Integer> visited = new HashSet<> ();
-            visited.add (queue.peek ().getId ());
-            
-            int iters = 10000;
-            while (!queue.isEmpty () && --iters >= 0) {
-                Vertex vertex = queue.poll ();
-                for (Edge edge : vertex.getEdges ().values ()) {
-                    if (!isActiveEdge (edge)) { continue; }
-                    
-                    if (!visited.contains (edge.S.getId ())) {
-                        visited.add (edge.S.getId ());
-                        queue.add (edge.S);
-                    }
-                }
-            }
-            
-            int dist  = Math.abs (vertices.size () - visited.size ());
-            int limit = ignoreIfOneSingle ? 1 : 0;
-            if (dist > limit) { return false; }
-            
-            if (dist == 1 && trimIfOneSingle) {
-                for (Integer vertexID : vertices) {
-                    if (!visited.contains (vertexID)) {
-                        tmpTrimVertex1 = vertexID;
-                        break;
-                    }
-                }
-                
-                return ignoreIfOneSingle;
-            }
-            
-            return true;
-        }
-        
-        return false;
-    }
-    
-    public Set <Integer> getVertices (boolean stable) {
-        if (stable) { return vertices; }
-        
-        Set <Integer> result = new HashSet <> (vertices);
-        if (!stable && tmpTrimVertex1 != null) {
-            result.remove (tmpTrimVertex1);
-        }
-        if (!stable && tmpTrimVertex2 != null) {
-            result.remove (tmpTrimVertex2);
-        }
-        
-        return result;
-    }
-    
-    public List <Vertex> getVerticesOrdered (boolean stable) {
-        final List <Vertex> verts = new ArrayList <> ();
-        for (Integer vertexID : getVertices (stable)) {
-            verts.add (graph.getVertices ().get (vertexID));
-        }
-        
-        return verts;
-    }
-    
-    public List <Edge> getInnerEdges (boolean stable) {
-        // for the graph without (edge|vertex)ToChange
-        if (stable) { return new ArrayList <> (edges); }
-        
-        Set <Edge> result = new HashSet <> (edges);
-        result.remove (tmpEdgeRemove);
-        result.add (tmpEdgeAdd); 
-        
-        return new ArrayList <> (result);
-    }
-    
-    public Set <Edge> getBorderEdges (boolean stable) {
-        if (stable) { return borderEdges; }
-        
-        Set <Edge> edges = new HashSet <> (borderEdges);
-        if (!stable && tmpTrimVertex1 != null) {
-            Vertex v = graph.getVertices ().get (tmpAddVertex1);
-            edges.removeAll (v.getEdges ().values ());
-            edges.add (tmpEdgeRemove);
-        }
-        if (!stable && tmpTrimVertex2 != null) {
-            Vertex v = graph.getVertices ().get (tmpAddVertex2);
-            edges.removeAll (v.getEdges ().values ());
-            edges.add (tmpEdgeRemove);
-        }
-        
-        if (tmpAddVertex1 != null) {
-            Vertex v = graph.getVertices ().get (tmpAddVertex1);
-            edges.addAll (v.getEdges ().values ());
-            edges.remove (tmpEdgeAdd);
-        }
-        if (tmpAddVertex2 != null) {
-            Vertex v = graph.getVertices ().get (tmpAddVertex2);
-            edges.addAll (v.getEdges ().values ());
-            edges.remove (tmpEdgeAdd);
-        }
-        
-        edges.removeAll (edges);
-        return edges;
-    }
-    
-    public Edge selectRandomEdgeFromGraph () {
-        int index = R.nextInt (graph.getEdgesList ().size ());
-        return graph.getEdgesList ().get (index);
-    }
-    
-    public Edge selectRandomEdgeFromSunRays () {
-        int index = R.nextInt (borderEdges.size ());
-        for (Edge edge : borderEdges) {
-            if (index-- == 0) { return edge; }
-        }
-        
-        return null; // impossible
-    }
-    
-    public Edge selectRandomEdgeFromBorderAndInside () {
-        int index = R.nextInt (borderEdges.size () + edges.size ());
-        if (index < borderEdges.size ()) {
-            for (Edge edge : borderEdges) {
-                if (index-- == 0) { return edge; }
-            }
-        } else {
-            index -= borderEdges.size ();
-            for (Edge edge : edges) {
-                if (index-- == 0) { return edge; }
-            }
-        }
-        
-        return null; // impossible
-    }
-    
-    public Edge selectRandomEdgeFromInside () {
-        int index = R.nextInt (edges.size ());
-        for (Edge edge : edges) {
-            if (index-- == 0) { return edge; }
-        }
-        
-        return null; // impossible
-    }
-    */
     
 }

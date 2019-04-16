@@ -12,6 +12,14 @@ public class Edge extends Pair <Vertex, Vertex> {
     @Getter @Setter
     @NonNull private Double weight;
     
+    public double getWeight (int iteration, int total) {
+        return iteration < total / 3
+             ? Math.pow (weight, -16)
+             : iteration < total * 2 / 3
+             ? Math.pow (weight, -8)
+             : weight;
+    }
+    
     public Edge (Vertex F, Vertex S, double weight) { 
         super (F.getId () <= S.getId () ? F : S, 
                F.getId () <= S.getId () ? S : F); 

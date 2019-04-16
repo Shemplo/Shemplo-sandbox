@@ -38,7 +38,8 @@ public class MCMCConstant extends AbsMCMC {
         
         final Edge candidateBorder = currentGraph.getRandomBorderEdge ();
         final Edge candidateIn     = currentGraph.getRandomInnerEdge ();
-        currentGraph.addEdge (candidateBorder).removeEdge (candidateIn);
+        currentGraph.addEdge    (candidateBorder, iteration, iterations)
+                    .removeEdge (candidateIn, iteration, iterations);
         //System.out.println ("rm " + candidatIn + " / add " + candidatBorder);
         //System.out.println ("X>> " + currentGraph);
         if (!currentGraph.isConnected ()) {
