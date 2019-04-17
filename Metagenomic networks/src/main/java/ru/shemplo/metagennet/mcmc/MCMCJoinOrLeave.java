@@ -5,6 +5,7 @@ import static ru.shemplo.metagennet.RunMetaGenMCMC.*;
 import ru.shemplo.metagennet.graph.Edge;
 import ru.shemplo.metagennet.graph.GraphDescriptor;
 
+// TODO: add TAU parameter as 100th p-value
 public class MCMCJoinOrLeave extends AbsMCMC {
     
     public MCMCJoinOrLeave (GraphDescriptor initialGraph, int iterations) {

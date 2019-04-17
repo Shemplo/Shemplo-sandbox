@@ -44,6 +44,7 @@ public class RunMetaGenMCMC {
         initial.getVertices ().stream ()
         . filter  (Objects::nonNull)
         . forEach (vertex -> occurrences.put (vertex, 0D));
+        System.out.println (initial.getVertices ().size () + " " + occurrences.size ());
         
         /*
         List <Double> aaa = initial.getEdgesList ().stream ()
