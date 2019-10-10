@@ -5,13 +5,40 @@ import static org.junit.jupiter.api.Assertions.*;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 
 import org.junit.jupiter.api.Test;
 
+import ru.shemplo.snowball.stuctures.Pair;
+
 public class TestScanner {
+    
+    private static Pair <String, List <String>> generateStressTest (int wordsBound) {
+        List <String> words = new ArrayList <> ();
+        StringBuilder sb = new StringBuilder ();
+        Random r = new Random ();
+        
+        int wordsNumber = wordsBound + r.nextInt (100);
+        for (int i = 0; i < wordsNumber; i++) {
+            for (int j = 0; j < 1 + r.nextInt (5); j++) {
+                sb.append (" ");
+            }
+            
+            int wordLength = 5 + r.nextInt (10);
+            String word = "";
+            for (int j = 0; j < wordLength; j++) {
+                word += (char) ('a' + r.nextInt (26 * 2));
+            }
+            words.add (word);
+            sb.append (word);
+            
+            for (int j = 0; j < 2 + r.nextInt (5); j++) {
+                sb.append (" ");
+            }
+        }
+        
+        return Pair.mp (sb.toString (), words);
+    }
     
     @Test
     public void testToken () throws IOException {
@@ -64,35 +91,14 @@ public class TestScanner {
     
     @Test
     public void testOverBufferStream () throws IOException {
-        List <String> words = new ArrayList <> ();
-        StringBuilder sb = new StringBuilder ();
-        Random r = new Random ();
-        
-        int wordsNumber = 32000 + r.nextInt (100);
-        for (int i = 0; i < wordsNumber; i++) {
-            for (int j = 0; j < 1 + r.nextInt (5); j++) {
-                sb.append (" ");
-            }
-            
-            int wordLength = 5 + r.nextInt (10);
-            String word = "";
-            for (int j = 0; j < wordLength; j++) {
-                word += (char) ('a' + r.nextInt (26 * 2));
-            }
-            words.add (word);
-            sb.append (word);
-            
-            for (int j = 0; j < 2 + r.nextInt (5); j++) {
-                sb.append (" ");
-            }
-        }
+        Pair <String, List <String>> test = generateStressTest (32000);
         
         try (
-            InputStream is = new ByteArrayInputStream (sb.toString ().getBytes ());
+            InputStream is = new ByteArrayInputStream (test.F.getBytes ());
         ) {
             var scanner = new FastScanner (is);
             
-            for (String word : words) {
+            for (String word : test.S) {
                 assertTrue (scanner.hasNext ());
                 assertEquals (word, scanner.next ());
             }
@@ -133,6 +139,45 @@ public class TestScanner {
             assertEquals (56432, scanner.nextInt ());
             
             assertFalse (scanner.hasNext ());
+        }
+    }
+    
+    @Test
+    public void testPerformance () throws IOException {
+        Pair <String, List <String>> test = generateStressTest (128000);
+        
+        try (
+            InputStream is2 = new ByteArrayInputStream (test.F.getBytes ());
+            InputStream is = new ByteArrayInputStream (test.F.getBytes ());
+        ) { 
+            long time0 = System.nanoTime ();
+            var scanner = new FastScanner (is);
+            int length0 = 0;
+            while (scanner.hasNext ()) {
+                length0 += scanner.next ().length ();
+            }
+            
+            long time1 = System.nanoTime ();
+            StringTokenizer st = new StringTokenizer (test.F);
+            int length1 = 0;
+            while (st.hasMoreTokens ()) {
+                length1 += st.nextToken ().length ();
+            }
+            
+            long time2 = System.nanoTime ();
+            Scanner sc = new Scanner (is2);
+            int length2 = 0;
+            while (sc.hasNext ()) {
+                length2 += sc.next ().length ();
+            }
+            
+            long time3 = System.nanoTime ();
+            sc.close ();
+            
+            System.out.println (String.format ("Fast scanner: %dmcs, StringTokenizer: %dmcs, Scanner: %dmcs", 
+                (time1 - time0) / 1000, (time2 - time1) / 1000, (time3 - time2) / 1000));
+            assertEquals (length1, length0); assertEquals (length1, length2);
+            assertTrue ((time1 - time0) < (time3 - time2));
         }
     }
     
