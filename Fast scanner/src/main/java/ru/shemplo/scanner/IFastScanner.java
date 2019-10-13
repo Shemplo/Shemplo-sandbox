@@ -2,7 +2,7 @@ package ru.shemplo.scanner;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.util.regex.Pattern;
+import java.util.function.Predicate;
 
 /**
  * Interface for homework about "fast" scanner.
@@ -101,31 +101,6 @@ public interface IFastScanner extends Closeable {
     
     long nextUnsignedLong (int radix) throws IOException;
     
-    // optional
-    
-    /**
-     * This method set up special criteria for methods {#hasNextWord ()} and {#hasNextWordInLine ()}
-     * that defines whether read sequence of characters is word or not.
-     *
-     * @argument regexpPattern compiled regular expression
-     */
-    void setWordPattern (Pattern regexpPattern);
-    
-    /**
-     * The same as {#hasNext ()} but in additional check if token accepts word criteria defined
-     * from {#setWordPredicate (Pattern)}. In case if no criteria (or null value passed) no
-     * additional checks should be done
-     */
-    boolean hasNextWord () throws IOException;
-    
-    default
-    boolean hasNextWordInLine () throws IOException {
-        return hasNextInLine () && hasNextWord ();
-    }
-    
-    default
-    String nextWord () throws IOException {
-        return next ();
-    }
+    void setSkipCharacter (Predicate <Integer> predicate);
     
 }
