@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 import org.junit.jupiter.api.Test;
@@ -44,9 +45,8 @@ public class TestScanner {
     public void testToken () throws IOException {
         try (
             InputStream is = new ByteArrayInputStream ("word".getBytes ());
+            var scanner = new FastScanner (is, StandardCharsets.UTF_8);
         ) {
-            var scanner = new FastScanner (is);
-            
             assertTrue (scanner.hasNext ());
             assertTrue (scanner.hasNext ());
             assertEquals ("word", scanner.next ());
@@ -59,9 +59,8 @@ public class TestScanner {
     public void test2Tokens () throws IOException {
         try (
             InputStream is = new ByteArrayInputStream ("two words".getBytes ());
+            var scanner = new FastScanner (is, StandardCharsets.UTF_8);
         ) {
-            var scanner = new FastScanner (is);
-            
             assertTrue (scanner.hasNext ());
             assertEquals ("two", scanner.next ());
             
@@ -73,12 +72,63 @@ public class TestScanner {
     }
     
     @Test
+    public void testTokensInLines () throws IOException {
+        try (
+            InputStream is = new ByteArrayInputStream ("a b\nc  \t d e\nf g h i \n j k ".getBytes ());
+            var scanner = new FastScanner (is, StandardCharsets.UTF_8);
+        ) {
+            assertTrue (scanner.hasNext ());
+            assertTrue (scanner.hasNextInLine ());
+            assertEquals ("a", scanner.next ());
+            
+            assertTrue (scanner.hasNext ());
+            assertTrue (scanner.hasNextInLine ());
+            assertEquals ("b", scanner.next ());
+            
+            assertTrue (scanner.hasNext ());
+            assertFalse (scanner.hasNextInLine ());
+            assertEquals ("c", scanner.next ());
+            
+            assertTrue (scanner.hasNext ());
+            assertTrue (scanner.hasNextInLine ());
+            assertEquals ("d", scanner.next ());
+            
+            assertTrue (scanner.hasNext ());
+            assertTrue (scanner.hasNextInLine ());
+            assertEquals ("e", scanner.next ());
+            
+            assertTrue (scanner.hasNext ());
+            assertFalse (scanner.hasNextInLine ());
+            assertEquals ("f", scanner.next ());
+            
+            assertTrue (scanner.hasNext ());
+            assertTrue (scanner.hasNextInLine ());
+            assertEquals ("g", scanner.next ());
+            
+            assertTrue (scanner.hasNext ());
+            assertTrue (scanner.hasNextInLine ());
+            assertEquals ("h", scanner.next ());
+            
+            assertTrue (scanner.hasNext ());
+            assertTrue (scanner.hasNextInLine ());
+            assertEquals ("i", scanner.next ());
+            
+            assertTrue (scanner.hasNext ());
+            assertFalse (scanner.hasNextInLine ());
+            assertEquals ("j", scanner.next ());
+            
+            assertTrue (scanner.hasNext ());
+            assertTrue (scanner.hasNextInLine ());
+            assertEquals ("k", scanner.next ());
+        }
+    }
+    
+    @Test
     public void testUnicodeTokens () throws IOException {
         try (
             InputStream is = new ByteArrayInputStream ("Привет мир".getBytes ());
+            var scanner = new FastScanner (is, StandardCharsets.UTF_8);
         ) {
-            var scanner = new FastScanner (is);
-            
             assertTrue (scanner.hasNext ());
             assertEquals ("Привет", scanner.next ());
             
@@ -95,9 +145,8 @@ public class TestScanner {
         
         try (
             InputStream is = new ByteArrayInputStream (test.F.getBytes ());
+            var scanner = new FastScanner (is, StandardCharsets.UTF_8);
         ) {
-            var scanner = new FastScanner (is);
-            
             for (String word : test.S) {
                 assertTrue (scanner.hasNext ());
                 assertEquals (word, scanner.next ());
@@ -111,9 +160,8 @@ public class TestScanner {
     public void testInteger () throws IOException {
         try (
             InputStream is = new ByteArrayInputStream ("436".getBytes ());
+            var scanner = new FastScanner (is, StandardCharsets.UTF_8);
         ) {
-            var scanner = new FastScanner (is);
-            
             assertTrue (scanner.hasNext ());
             assertTrue (scanner.hasNextInt ());
             assertTrue (scanner.hasNextInt ());
@@ -127,9 +175,8 @@ public class TestScanner {
     public void testIntegers () throws IOException {
         try (
             InputStream is = new ByteArrayInputStream ("436 56432".getBytes ());
+            var scanner = new FastScanner (is, StandardCharsets.UTF_8);
         ) {
-            var scanner = new FastScanner (is);
-            
             assertTrue (scanner.hasNext ());
             assertTrue (scanner.hasNextInt ());
             assertTrue (scanner.hasNextInt ());
@@ -151,7 +198,7 @@ public class TestScanner {
             InputStream is = new ByteArrayInputStream (test.F.getBytes ());
         ) { 
             long time0 = System.nanoTime ();
-            var scanner = new FastScanner (is);
+            var scanner = new FastScanner (is, StandardCharsets.UTF_8);
             int length0 = 0;
             while (scanner.hasNext ()) {
                 length0 += scanner.next ().length ();
@@ -172,6 +219,7 @@ public class TestScanner {
             }
             
             long time3 = System.nanoTime ();
+            scanner.close ();
             sc.close ();
             
             System.out.println (String.format ("Fast scanner: %dmcs, StringTokenizer: %dmcs, Scanner: %dmcs", 
