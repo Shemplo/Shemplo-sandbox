@@ -3,11 +3,14 @@ package ru.shemplo.scanner;
 import java.io.*;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.util.regex.Pattern;
+import java.util.function.Predicate;
 
 import lombok.Setter;
 
 public final class FastScanner implements IFastScanner {
+    
+    @Setter (onMethod_ = { @Override })
+    private Predicate <Integer> skipCharacter = Character::isWhitespace;
     
     private final Reader reader;
     
@@ -44,7 +47,7 @@ public final class FastScanner implements IFastScanner {
         int charachter = -1;
         
         while ((charachter = reader.read ()) != -1) {
-            if (Character.isWhitespace (charachter)) {
+            if (skipCharacter.test (charachter)) {
                 if (charachter == '\n' && !isToken) {
                     linesSkipped++;
                 }
@@ -154,17 +157,6 @@ public final class FastScanner implements IFastScanner {
             String message = "Next token is absent or non-unsigned long";
             throw new IOException (message);
         }
-    }
-
-    @Setter
-    private Pattern wordPattern;
-
-    @Override
-    public boolean hasNextWord () throws IOException {
-        if (!hasNext ()) { return false; }
-        
-        if (wordPattern == null) { return true; }
-        return wordPattern.matcher (token).find ();
     }
     
 }

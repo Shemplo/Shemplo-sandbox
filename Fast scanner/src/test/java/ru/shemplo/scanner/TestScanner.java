@@ -28,7 +28,7 @@ public class TestScanner {
             int wordLength = 5 + r.nextInt (10);
             String word = "";
             for (int j = 0; j < wordLength; j++) {
-                word += (char) ('a' + r.nextInt (26 * 2));
+                word += (char) ('_' + r.nextInt (1000));
             }
             words.add (word);
             sb.append (word);
@@ -120,6 +120,33 @@ public class TestScanner {
             assertTrue (scanner.hasNext ());
             assertTrue (scanner.hasNextInLine ());
             assertEquals ("k", scanner.next ());
+        }
+    }
+    
+    @Test
+    public void testWords () throws IOException {
+        try (
+            InputStream is = new ByteArrayInputStream ("word,and-one///more   word".getBytes ());
+            var scanner = new FastScanner (is, StandardCharsets.UTF_8);
+        ) {
+            scanner.setSkipCharacter (code -> !Character.isLetter (code));
+            
+            assertTrue (scanner.hasNext ());
+            assertEquals ("word", scanner.next ());
+            
+            assertTrue (scanner.hasNext ());
+            assertEquals ("and", scanner.next ());
+            
+            assertTrue (scanner.hasNext ());
+            assertEquals ("one", scanner.next ());
+            
+            assertTrue (scanner.hasNext ());
+            assertEquals ("more", scanner.next ());
+            
+            assertTrue (scanner.hasNext ());
+            assertEquals ("word", scanner.next ());
+            
+            assertFalse (scanner.hasNext ());
         }
     }
     
