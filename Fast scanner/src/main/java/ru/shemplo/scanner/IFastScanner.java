@@ -52,11 +52,17 @@ public interface IFastScanner extends Closeable {
     
     boolean hasNextInt (int radix) throws IOException;
     
-    boolean hasNextIntInLine (int radix) throws IOException;
+    default
+    boolean hasNextIntInLine (int radix) throws IOException {
+        return hasNextInLine () && hasNextInt (radix);
+    }
     
     boolean hasNextLong (int radix) throws IOException;
     
-    boolean hasNextLongInLine (int radix) throws IOException;
+    default
+    boolean hasNextLongInLine (int radix) throws IOException {
+        return hasNextInLine () && hasNextLong (radix);
+    }
     
     // and so on ...
     
@@ -112,8 +118,14 @@ public interface IFastScanner extends Closeable {
      */
     boolean hasNextWord () throws IOException;
     
-    boolean hasNextWordInLine () throws IOException;
+    default
+    boolean hasNextWordInLine () throws IOException {
+        return hasNextInLine () && hasNextWord ();
+    }
     
-    String nextWord () throws IOException;
+    default
+    String nextWord () throws IOException {
+        return next ();
+    }
     
 }

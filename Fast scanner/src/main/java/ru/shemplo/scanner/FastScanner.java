@@ -5,6 +5,8 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.regex.Pattern;
 
+import lombok.Setter;
+
 public final class FastScanner implements IFastScanner {
     
     private final Reader reader;
@@ -84,25 +86,19 @@ public final class FastScanner implements IFastScanner {
     }
 
     @Override
-    public boolean hasNextIntInLine (int radix) throws IOException {
-        return hasNextInLine () && hasNextInt (radix);
-    }
-
-    @Override
     public boolean hasNextLong (int radix) throws IOException {
         if (!hasNext ()) { return false; }
         try {
             Long.parseLong (token, radix);
         } catch (NumberFormatException nfe) {
-            return false;
+            try {
+                Long.parseUnsignedLong (token, radix);
+            } catch (NumberFormatException nfe2) {                
+                return false;
+            }
         }
         
         return true;
-    }
-
-    @Override
-    public boolean hasNextLongInLine (int radix) throws IOException {
-        return hasNextInLine () && hasNextLong (radix);
     }
 
     @Override
@@ -118,12 +114,20 @@ public final class FastScanner implements IFastScanner {
     
     @Override
     public String nextLine () throws IOException {
-        return null;
+        StringBuilder sb = new StringBuilder ();
+        
+        int character = -1;
+        while ((character = reader.read ()) != -1) {
+            if (character == '\n') { break; }
+            sb.append ((char) character);
+        }
+        
+        return sb.toString ();
     }
 
     @Override
     public int nextInt (int radix) throws IOException {
-        if (hasNextInt (radix)) {
+        if (hasNextLong (radix)) {
             return Integer.parseInt (next (), radix);
         } else {
             String message = "Next token is absent or non-integer";
@@ -132,31 +136,27 @@ public final class FastScanner implements IFastScanner {
     }
 
     @Override
-    public long nextLong () throws IOException {
-        return 0;
-    }
-
-    @Override
     public long nextLong (int radix) throws IOException {
-        return 0;
-    }
-
-    @Override
-    public long nextUnsignedLong () throws IOException {
-        return 0;
+        if (hasNextLong (radix)) {
+            return Long.parseLong (next (), radix);
+        } else {
+            String message = "Next token is absent or non-long";
+            throw new IOException (message);
+        }
     }
 
     @Override
     public long nextUnsignedLong (int radix) throws IOException {
-        return 0;
+        if (hasNextInt (radix)) {
+            return Long.parseUnsignedLong (next (), radix);
+        } else {
+            String message = "Next token is absent or non-unsigned long";
+            throw new IOException (message);
+        }
     }
 
+    @Setter
     private Pattern wordPattern;
-    
-    @Override
-    public void setWordPattern (Pattern regexpPattern) {
-        this.wordPattern = regexpPattern;
-    }
 
     @Override
     public boolean hasNextWord () throws IOException {
@@ -164,16 +164,6 @@ public final class FastScanner implements IFastScanner {
         
         if (wordPattern == null) { return true; }
         return wordPattern.matcher (token).find ();
-    }
-
-    @Override
-    public boolean hasNextWordInLine () throws IOException {
-        return hasNextInLine () && hasNextWord ();
-    }
-
-    @Override
-    public String nextWord () throws IOException {
-        return next ();
     }
     
 }
