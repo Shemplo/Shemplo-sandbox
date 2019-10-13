@@ -122,6 +122,7 @@ public final class FastScanner implements IFastScanner {
             sb.append ((char) character);
         }
         
+        previousCharacter = -1;
         return sb.toString ();
     }
 
