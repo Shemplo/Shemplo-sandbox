@@ -124,6 +124,50 @@ public class TestScanner {
     }
     
     @Test
+    public void testTokensInEmptyLines () throws IOException {
+        try (
+            InputStream is = new ByteArrayInputStream ("a z \n  \nb c\n \n \n\n d e".getBytes ());
+            var scanner = new FastScanner (is, StandardCharsets.UTF_8);
+        ) {
+            assertTrue (scanner.hasNext ());
+            assertTrue (scanner.hasNextInLine ());
+            assertEquals ("a", scanner.next ());
+            
+            assertTrue (scanner.hasNext ());
+            assertTrue (scanner.hasNextInLine ());
+            assertEquals ("z", scanner.next ());
+            
+            assertTrue (scanner.hasNext ());
+            assertFalse (scanner.hasNextInLine ());
+            scanner.skipLine ();
+            assertFalse (scanner.hasNextInLine ());
+            scanner.skipLine ();
+            assertTrue (scanner.hasNextInLine ());
+            assertEquals ("b", scanner.next ());
+            
+            assertTrue (scanner.hasNext ());
+            assertTrue (scanner.hasNextInLine ());
+            assertEquals ("c", scanner.next ());
+            
+            assertTrue (scanner.hasNext ());
+            assertFalse (scanner.hasNextInLine ());
+            scanner.skipLine ();
+            assertFalse (scanner.hasNextInLine ());
+            scanner.skipLine ();
+            assertFalse (scanner.hasNextInLine ());
+            scanner.skipLine ();
+            assertFalse (scanner.hasNextInLine ());
+            scanner.skipLine ();
+            assertTrue (scanner.hasNextInLine ());
+            assertEquals ("d", scanner.next ());
+            
+            assertTrue (scanner.hasNext ());
+            assertTrue (scanner.hasNextInLine ());
+            assertEquals ("e", scanner.next ());
+        }
+    }
+    
+    @Test
     public void testWords () throws IOException {
         try (
             InputStream is = new ByteArrayInputStream ("word,and-one///more   word".getBytes ());

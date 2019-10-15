@@ -72,34 +72,56 @@ public interface IFastScanner extends Closeable {
      */
     String next () throws IOException;
     
-    String nextLine () throws IOException;
+    /**
+     * This method should skip all characters until new line started.
+     * It can be useful when {#hasNextInLine ()} returns <code>false</code>
+     * and {#hasNext ()} returns <code>true<code> but you don't know how many 
+     * empty lines was skipped during the scanning for new token
+     */
+    void skipLine () throws IOException;
     
-    // The logic of next methods should be the same and use for detecting type of token
-    // only read sequence of characters.
-    //
-    // All trics with `try { Interger.parseInt (this.sequnce); } catch { return false; }`
-    // are prohibited!
+    // All trics with
+    // <code>
+    // try {
+    //     Integer.parseInt (token);
+    //     return true;
+    // } catch (NumberFormatException nfe) { 
+    //     return false;
+    // }
+    // </code>
+    // are allowed!
     
     default
     int nextInt () throws IOException {
         return nextInt (10);
     }
     
-    int nextInt (int radix) throws IOException;
+    default
+    public int nextInt (int radix) throws IOException {
+        if (hasNextLong (radix)) {
+            return Integer.parseInt (next (), radix);
+        } else {
+            String message = "Next token is absent or non-integer";
+            throw new IOException (message);
+        }
+    }
     
     default
     long nextLong () throws IOException {
         return nextLong (10);
     }
     
-    long nextLong (int radix) throws IOException;
-    
     default
-    long nextUnsignedLong () throws IOException {
-        return nextUnsignedLong (10);
+    public long nextLong (int radix) throws IOException {
+        if (hasNextLong (radix)) {
+            return Long.parseLong (next (), radix);
+        } else {
+            String message = "Next token is absent or non-long";
+            throw new IOException (message);
+        }
     }
     
-    long nextUnsignedLong (int radix) throws IOException;
+    // internal logic method
     
     void setSkipCharacter (Predicate <Integer> predicate);
     
