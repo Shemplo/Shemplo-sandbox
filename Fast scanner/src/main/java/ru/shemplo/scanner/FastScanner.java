@@ -116,47 +116,18 @@ public final class FastScanner implements IFastScanner {
     }
     
     @Override
-    public String nextLine () throws IOException {
-        StringBuilder sb = new StringBuilder ();
-        
-        int character = -1;
-        while ((character = reader.read ()) != -1) {
-            if (character == '\n') { break; }
-            sb.append ((char) character);
+    public void skipLine () throws IOException {
+        if (linesSkipped > 0) {
+            linesSkipped--;
+        } else {            
+            int character = -1;
+            while ((character = reader.read ()) != -1) {
+                if (character == '\n') { break; }
+            }
         }
+        
         
         previousCharacter = -1;
-        return sb.toString ();
-    }
-
-    @Override
-    public int nextInt (int radix) throws IOException {
-        if (hasNextLong (radix)) {
-            return Integer.parseInt (next (), radix);
-        } else {
-            String message = "Next token is absent or non-integer";
-            throw new IOException (message);
-        }
-    }
-
-    @Override
-    public long nextLong (int radix) throws IOException {
-        if (hasNextLong (radix)) {
-            return Long.parseLong (next (), radix);
-        } else {
-            String message = "Next token is absent or non-long";
-            throw new IOException (message);
-        }
-    }
-
-    @Override
-    public long nextUnsignedLong (int radix) throws IOException {
-        if (hasNextInt (radix)) {
-            return Long.parseUnsignedLong (next (), radix);
-        } else {
-            String message = "Next token is absent or non-unsigned long";
-            throw new IOException (message);
-        }
     }
     
 }
